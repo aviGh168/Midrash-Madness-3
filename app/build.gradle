@@ -1,0 +1,37 @@
+plugins {
+    id 'application'
+    id("org.springframework.boot") version("3.4.3")
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'software.amazon.awssdk:rds:2.39.2'
+    implementation 'software.amazon.awssdk:s3:2.39.2'
+    implementation 'software.amazon.awssdk:sns:2.39.2'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
+    implementation 'com.mysql:mysql-connector-j:8.3.0'
+
+    implementation platform("org.springframework.boot:spring-boot-dependencies:3.4.3")
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.springframework.boot:spring-boot-starter-test"
+    implementation 'org.springframework.security:spring-security-crypto:6.4.5'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(24)
+    }
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'org.example.App'
+}
