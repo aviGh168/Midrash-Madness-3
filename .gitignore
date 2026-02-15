@@ -31,3 +31,5 @@ build
 
 .idea/
 
+application.properties
+credentials.properties

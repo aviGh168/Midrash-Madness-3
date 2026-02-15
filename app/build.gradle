@@ -33,5 +33,9 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'org.example.App'
+    mainClass = 'spring.Application'
+}
+
+bootRun {
+    jvmArgs = ["--enable-native-access=ALL-UNNAMED"]
 }
