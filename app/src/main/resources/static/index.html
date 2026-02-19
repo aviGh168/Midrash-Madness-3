@@ -1,7 +1,66 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Test Page</title>
+    <title>Midrash Madness</title>
+    <link rel="icon" href="MMLogoNoBackground.png" />
+    <link href="index.css" rel="stylesheet" />
+    <script src="index.js" defer></script>
 </head>
 <body>
-    <p>Test</p>
+<nav class="nav active">
+    <div class="container">
+        <img id="logo" src="MMLogoNoBackground.png" alt="logo" width="65px" height="50px">
+        <ul>
+            <li id="home">Home</li>
+<!--            <li id="bracket"><a href="BracketPage.html">Bracket</a></li>-->
+<!--            <li id="list"><a href="ListPage.html">Midrash List</a></li>-->
+        </ul>
+    </div>
+</nav>
+<h1>Midrash Madness</h1>
+
+<p class="paragraph">
+    Here at Midrash Madness Inc&period; we have spent a long time wondering about
+    the phenomenon of many Midrashim, such as the ones depicted above &lpar;stolen from the Little Midrash Says&rpar;
+    becoming extremely famous&comma; sometimes to the point that people
+    forget what the pasuk actually says&period; Often&comma; many people live their lives believing that certain
+    p&apos;shatim and stories are written in the Torah itself and are enormously surprised when they find
+    out otherwise&period; There are many reasons for this&comma; ranging from how preschool morahs find it most
+    interesting to teach the parshah&comma; to various well-known vertlach that are taken as undeniable fact
+    even when there are other answers given&period;
+</p>
+<p class="paragraph">
+    To that end&comma; we are pleased to announce the Midrash Madness Bracket Challenge&period; The
+    MM team of experts has worked tirelessly to compile a list of what they believe are the 64 most
+    famous Ma&apos;amarei Chazal on Chumash that are not written explicitly in the Torah&period; These have been
+    arranged in a bracket format&comma; grouped by the area of the Torah with which they are discussed&period;
+</p>
+<p class="paragraph">
+    We are calling upon you&comma; the people&comma; to participate in this exciting activity for two reasons&colon;
+    1&rpar; We would like to call everyone&apos;s attention to what is written in the Torah and what are just famous Midrashim&comma;
+    and 2&rpar; get the answer to the age-old question of what is the most well-known Torah Midrash&period; Our new website has been
+    designed to aid the implementation of this project&period; Please fill out the bracket located on the site&period;
+    Once all the brackets have been filled&comma; our analytics squad will undertake a thorough examination
+    of the results to determine the winning Midrash as well as whose bracket best corresponds to how the people voted&period; The results will be
+    announced once they have been established&period;
+</p>
+<p class="paragraph">
+    We thank you in advance for helping with this project&comma; and we look forward to what the future will bring&period;
+</p>
+<h2>Instructions for Filling Out Your Bracket</h2>
+<p class="paragraph">
+    The brackets are arranged in a tournament format&comma; allowing for multiple one-vs-one matchups to lead to one big winner&period;
+    The two contestants are on connected horizontal lines directly above each other and the winner is written on the line
+    extending from their connector&period; You continue to work from the outside in to keep narrowing the
+    field to end up with one winner&period; &lpar;<em>See Figure 1</em>&rpar;
+</p>
+<img id="diagram" src="diagram.png" alt="diagram" width="400px" height="202px">
+<p class="paragraph">
+    Please vote on which Midrash wins each matchup based on which one you feel is the more well-known&comma; as defined by which one
+    you believe is the one that more people think is an explicit pasuk&period; &lpar;The numbers on the sides are purely for organizational
+    purposes and should not factor into your decision&period;&rpar;
+</p>
+<a href="javascript:setTimeout(()=>{window.location = 'BracketPage.html'},500);"><button class="ripple" id="play">Fill Out Bracket</button></a>
+<a href="javascript:setTimeout(()=>{window.location = 'ListPage.html'},500);"><button class="ripple" id="listButton">See List of the Midrashim</button></a>
 </body>
+</html>

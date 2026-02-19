@@ -1,0 +1,139 @@
+body{
+    background-color: rgb(154, 154, 233);
+
+}
+ 
+.container {
+    margin: 0 auto;
+}
+
+.nav {
+    position: fixed;
+    background-color: rgb(154, 154, 233);
+    top: 0;
+    left: 0;
+    right: 0;
+    transition: all .3s ease-in-out;
+    z-index: 1;
+}
+
+.nav.active {
+    background-color: rgb(69, 69, 241);
+}
+
+ul {
+    text-align: center;
+    list-style-type: none;
+    margin: 0;
+    padding: 14px;
+    border-radius: 5px;
+}
+
+li {
+    display: inline;
+    font-size: 24px;
+    padding: 15px 16px;
+}
+
+li:active {
+    background-color: hsl(331, 90%, 80%);
+}
+
+li#home {
+    background-color: rgb(154, 154, 233);
+    color: white;
+}
+
+a {
+    text-decoration: none;
+    color: black;
+}
+
+a:hover{
+    color: white;
+}
+
+img#logo{
+    position: absolute;
+    top:3px;
+    left: 11px;
+}
+
+h1 {
+    font-family: cursive;
+    text-align: center;
+    font-size: 72px;
+    margin: 75px 0px 10px 0px;
+}
+
+p.paragraph{
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    line-height: 25px;
+    text-align: justify;
+    width: 825px;
+    margin: auto;
+    padding: 25px;
+}
+
+h2 {
+    font-family: cursive;
+    text-align: center;
+    font-size: 40px;
+    margin: 20px 0px 10px 0px;
+}
+
+button#play{
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 40px;
+    margin-top: 10px;
+    margin-left: 30%;
+    width: 40%;
+    height: 75px;
+    background-color: rgba(69, 69, 241, 0.603);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+button#listButton{
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 28px;
+    margin-top: 30px;
+    margin-left: 30%;
+    margin-bottom: 20px;
+    width: 40%;
+    height: 75px;
+    background-color: rgba(69, 69, 241, 0.603);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+button:focus{
+    outline: none;
+}
+
+button .circle {
+    position: absolute;
+    background-color: white;
+    width: 1000px;
+    height: 1000px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    animation: scale 0.5s ease-out;
+}
+
+@keyframes scale {
+    to {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+    }
+}
+
+img#diagram{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 5px;
+}
