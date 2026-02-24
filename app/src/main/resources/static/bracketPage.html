@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Midrash Madness - Bracket</title>
+    <link rel="icon" href="MMLogoNoBackground.png" />
+    <link href="styles.css" rel="stylesheet">
+    <link href="bracketPage.css" rel="stylesheet" />
+    <script src="bracketPage.js" defer></script>
+</head>
+<body>
+    <nav class="nav active">
+        <div class="container">
+            <img id="logo" src="MMLogoNoBackground.png" alt="logo" width="65px" height="50px">
+            <ul>
+                <li id="home"><a href="index.html">Home</a></li>
+                <li id="bracket">Bracket</li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1>Fill Out Your Bracket</h1>
+
+    <div id="round-controls">
+        <button id="back-btn" class="ctrl-btn" style="display:none;">&larr; Back</button>
+        <span id="round-label">Round 1 of 6</span>
+        <button id="advance-btn" class="ctrl-btn" style="display:none;">Advance to Next Round &rarr;</button>
+    </div>
+
+    <div id="bracket-wrapper">
+        <div id="bracket-container">
+            <!-- Groups rendered by JS -->
+            <div id="group-a" class="bracket-group top-left"></div>
+            <div id="group-b" class="bracket-group bottom-left"></div>
+            <div id="group-c" class="bracket-group top-right"></div>
+            <div id="group-d" class="bracket-group bottom-right"></div>
+            <div id="champion-display">
+                <div id="champion-label">Champion</div>
+                <div id="champion-name">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matchup Modal -->
+    <div id="matchup-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+            <h2 class="modal-title">Choose the Winner</h2>
+            <p class="modal-subtitle">Which Midrash do more people believe is written explicitly in the Torah?</p>
+            <div class="modal-contestants">
+                <div class="contestant-card" id="contestant-a">
+                    <div class="contestant-seed" id="seed-a"></div>
+                    <div class="contestant-desc" id="desc-a"></div>
+                    <div class="contestant-source" id="source-a"></div>
+                    <button class="pick-btn ripple" id="pick-a">Pick This One</button>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="contestant-card" id="contestant-b">
+                    <div class="contestant-seed" id="seed-b"></div>
+                    <div class="contestant-desc" id="desc-b"></div>
+                    <div class="contestant-source" id="source-b"></div>
+                    <button class="pick-btn ripple" id="pick-b">Pick This One</button>
+                </div>
+            </div>
+            <div class="modal-ok-row">
+                <button class="ok-btn ripple" id="matchup-ok-btn" disabled>Confirm Pick</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Modal -->
+    <div id="submit-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-box submit-modal-box">
+            <button class="modal-close" id="submit-modal-close">&times;</button>
+            <h2 class="modal-title">Submit Your Bracket</h2>
+            <p class="modal-subtitle">Enter your details to be notified of the results!</p>
+            <div id="submit-error" class="submit-error" style="display:none;"></div>
+            <div class="submit-form">
+                <input type="text" id="submit-name" placeholder="Your Name" class="form-input" />
+                <input type="email" id="submit-email" placeholder="Your Email Address" class="form-input" />
+                <button class="pick-btn ripple" id="submit-confirm-btn">Submit Bracket</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
