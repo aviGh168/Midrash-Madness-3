@@ -177,35 +177,49 @@ function renderGroup(groupName, groupIndex) {
     const container = el(`group-${groupName.toLowerCase()}`);
     container.innerHTML = '';
 
-    // Label
-    const label = document.createElement('div');
-    label.className = 'group-label';
-    label.textContent = `Group ${groupName}`;
-    container.appendChild(label);
-
     const innerFlex = document.createElement('div');
     innerFlex.style.display = 'flex';
     innerFlex.style.flexDirection = 'row';
     innerFlex.style.alignItems = 'stretch';
-    container.appendChild(innerFlex);
 
-    // Rounds 1-4 within this group
-    for (let r = 1; r <= 4; r++) {
+    // Build round-1 column wrapped with the group label above it
+    const r1Wrapper = document.createElement('div');
+    r1Wrapper.style.display = 'flex';
+    r1Wrapper.style.flexDirection = 'column';
+
+    const label = document.createElement('div');
+    label.className = 'group-label';
+    label.textContent = `Group ${groupName}`;
+    r1Wrapper.appendChild(label);
+
+    const r1Col = document.createElement('div');
+    r1Col.className = 'round-col';
+    r1Col.dataset.round = 1;
+    const r1Matchups = 8;
+    const r1Offset = groupOffset(groupIndex, 1);
+    for (let mi = 0; mi < r1Matchups; mi++) {
+        r1Col.appendChild(buildMatchupSlot(1, r1Offset + mi, groupName));
+    }
+    r1Wrapper.appendChild(r1Col);
+    innerFlex.appendChild(r1Wrapper);
+
+    // Rounds 2-4 as plain columns
+    for (let r = 2; r <= 4; r++) {
         const col = document.createElement('div');
         col.className = 'round-col';
         col.dataset.round = r;
 
-        const matchupsInRound = [0, 8, 4, 2, 1][r];
+        const matchupsInRound = [0, 0, 4, 2, 1][r];
         const offset = groupOffset(groupIndex, r);
 
         for (let mi = 0; mi < matchupsInRound; mi++) {
-            const globalIdx = offset + mi;
-            const slot = buildMatchupSlot(r, globalIdx, groupName);
-            col.appendChild(slot);
+            col.appendChild(buildMatchupSlot(r, offset + mi, groupName));
         }
 
         innerFlex.appendChild(col);
     }
+
+    container.appendChild(innerFlex);
 }
 
 function buildMatchupSlot(round, globalIdx, groupName) {
@@ -213,14 +227,16 @@ function buildMatchupSlot(round, globalIdx, groupName) {
     const slot = document.createElement('div');
     slot.className = 'matchup-slot';
 
+    // The entire matchup-pair is the single clickable card unit
     const pair = document.createElement('div');
     pair.className = 'matchup-pair';
 
     const labelA = mA ? `${groupName} - ${mA.seed}` : 'TBD';
     const labelB = mB ? `${groupName} - ${mB.seed}` : 'TBD';
 
-    const boxA = makeSeedBox(labelA, mA, round, globalIdx, true);
-    const boxB = makeSeedBox(labelB, mB, round, globalIdx, true);
+    // Boxes are display-only — no individual click handlers
+    const boxA = makeSeedBox(labelA, mA, round, globalIdx, false);
+    const boxB = makeSeedBox(labelB, mB, round, globalIdx, false);
 
     // Highlight the winner box
     const winnerId = winners[round][globalIdx];
@@ -229,16 +245,23 @@ function buildMatchupSlot(round, globalIdx, groupName) {
         if (mB && mB.midrash_id === winnerId) boxB.classList.add('winner');
     }
 
-    // Click handler — open modal
     const canClick = (round === currentRound) && mA && mB;
     if (canClick) {
-        const openModal = () => openMatchupModal(round, globalIdx, mA, mB);
-        boxA.addEventListener('click', openModal);
-        boxB.addEventListener('click', openModal);
-        pair.style.cursor = 'pointer';
+        // The whole pair card is the clickable unit
+        pair.classList.add('matchup-card-clickable');
+        pair.setAttribute('role', 'button');
+        pair.setAttribute('tabindex', '0');
+        pair.addEventListener('click', () => openMatchupModal(round, globalIdx, mA, mB));
+        pair.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') openMatchupModal(round, globalIdx, mA, mB);
+        });
     } else {
-        boxA.classList.remove('clickable');
-        boxB.classList.remove('clickable');
+        pair.classList.add('matchup-card-locked');
+    }
+
+    // Mark already-won pairs visually
+    if (winnerId !== null && winnerId !== undefined) {
+        pair.classList.add('matchup-card-decided');
     }
 
     pair.appendChild(boxA);
