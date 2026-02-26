@@ -26,18 +26,14 @@
         <button id="advance-btn" class="ctrl-btn" style="display:none;">Advance to Next Round &rarr;</button>
     </div>
 
+    <!-- Bracket image + overlay container — populated by JS -->
     <div id="bracket-wrapper">
-        <div id="bracket-container">
-            <!-- Groups rendered by JS -->
-            <div id="group-a" class="bracket-group top-left"></div>
-            <div id="group-b" class="bracket-group bottom-left"></div>
-            <div id="group-c" class="bracket-group top-right"></div>
-            <div id="group-d" class="bracket-group bottom-right"></div>
-            <div id="champion-display">
-                <div id="champion-label">Champion</div>
-                <div id="champion-name">-</div>
-            </div>
-        </div>
+        <div id="bracket-loading">Loading bracket data&hellip;</div>
+    </div>
+
+    <!-- Submit button — shown by JS after all rounds complete -->
+    <div id="submit-area" style="display:none;">
+        <button id="submit-bracket-btn" class="ripple">Submit Your Bracket</button>
     </div>
 
     <!-- Matchup Modal -->
@@ -75,8 +71,8 @@
             <p class="modal-subtitle">Enter your details to be notified of the results!</p>
             <div id="submit-error" class="submit-error" style="display:none;"></div>
             <div class="submit-form">
-                <input type="text" id="submit-name" placeholder="Your Name" class="form-input" />
-                <input type="email" id="submit-email" placeholder="Your Email Address" class="form-input" />
+                <input type="text"  id="submit-name"  placeholder="Your Name"          class="form-input" />
+                <input type="email" id="submit-email" placeholder="Your Email Address"  class="form-input" />
                 <button class="pick-btn ripple" id="submit-confirm-btn">Submit Bracket</button>
             </div>
         </div>

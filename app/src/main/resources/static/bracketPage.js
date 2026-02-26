@@ -1,42 +1,155 @@
 /**
- * bracketPage.js
- * Handles all bracket UI logic for Midrash Madness.
+ * bracketPage.js  —  Midrash Madness Bracket
  *
- * Data flow:
- *  1. On load, fetch all 64 midrashim from GET /api/bracket/midrashim
- *  2. Organise into groups A-D, seeded 1-16 each
- *  3. Generate 4 rounds per group (R1=8 matchups, R2=4, R3=2, R4=1) + semifinal + final
- *  4. Track winners client-side until submission
- *  5. On submit, POST /api/bracket/submit with all round winners + user info
+ * The bracket is displayed as a PNG image (bracketImage.png).
+ * Transparent overlay <div>s are absolutely positioned over every matchup box,
+ * sized in percentage units so they scale with the image.
  *
- * Seeding: standard 1v16, 2v15, 3v14, 4v13, 5v12, 6v11, 7v10, 8v9
- * Global round numbering (1-6):
- *   Round 1 - 32 matchups (8 per group)
- *   Round 2 - 16 matchups (4 per group)
- *   Round 3 - 8  matchups (2 per group)
- *   Round 4 - 4  matchups (1 per group)
- *   Round 5 - 2  matchups (semi-finals: A-winner vs B-winner, C vs D)
- *   Round 6 - 1  matchup  (final)
+ * The image width = 100% of its container.
+ * The image HEIGHT is set by JS so that the shortest seed box is at least
+ * MIN_BOX_PX pixels tall — enough to show a readable text label.
+ *
+ * PDF native size: 4800 × 3750 px  (aspect ratio 1.28 : 1 wide)
+ * All positions below are expressed as % of those native dimensions.
+ *
+ * Round logic (unchanged from original):
+ *   R1  32 matchups  (8 per group A-D)
+ *   R2  16 matchups  (4 per group)
+ *   R3   8 matchups  (2 per group)
+ *   R4   4 matchups  (1 per group — group champion)
+ *   R5   2 matchups  (semi-finals: A-champ vs B-champ, C-champ vs D-champ)
+ *   R6   1 matchup   (final)
+ *
+ * PDF visual columns:
+ *   L-R1  → JS R1  (groups A+B, left side)
+ *   L-R2  → JS R2  (groups A+B)
+ *   L-R3  → JS R3  (groups A+B)
+ *   L-R4  → JS R5 semi-final LEFT  (A-champ vs B-champ)
+ *   CENTER → JS R6 final
+ *   R-R4  → JS R5 semi-final RIGHT (C-champ vs D-champ)
+ *   R-R3  → JS R3  (groups C+D)
+ *   R-R2  → JS R2  (groups C+D)
+ *   R-R1  → JS R1  (groups C+D, right side)
+ *
+ * JS R4 (group finals) has no dedicated PDF column.
+ * While currentRound === 4, we re-use the R3 column space with a subtle
+ * "round 4" overlay to let users pick the group champions before semi-finals.
  */
+
+// ─── Layout constants ─────────────────────────────────────────────────────────
+
+/** Minimum height in px for the smallest seed box on screen. */
+const MIN_BOX_PX = 38;
+
+/**
+ * Column x-positions as [left%, width%] of the PDF native width (4800 px).
+ * Empirically measured from bracketImage.png pixel analysis.
+ *
+ * PDF column layout (left → right):
+ *   L_R1   cols  70- 558  → JS Round 1  (Groups A+B)
+ *   L_R2   cols 590-1077  → JS Round 2  (Groups A+B)
+ *   L_R3   cols 832-1320  → JS Round 3  (Groups A+B)  [overlaps R2 x-range]
+ *   L_R4   cols 1198-1686 → JS Round 4  (group finals A+B)
+ *   L_SEMI cols 1523-2011 → JS Round 5  (semi-final, left)
+ *   CHAMP  cols 2161-2648 → JS Round 6  (final / champion)
+ *   Right side mirrors left exactly.
+ */
+const COL = {
+    L_R1:   [1.46,  10.17],  // cols  70-558
+    L_R2:   [12.29, 10.15],  // cols 590-1077
+    L_R3:   [17.33, 10.17],  // cols 832-1320
+    L_R4:   [24.96, 10.17],  // cols 1198-1686
+    L_SEMI: [31.73, 10.17],  // cols 1523-2011
+    CHAMP:  [45.02, 10.15],  // cols 2161-2648
+    R_SEMI: [58.10, 10.17],  // cols 2789-3277
+    R_R4:   [64.88, 10.17],  // cols 3114-3602
+    R_R3:   [72.50, 10.17],  // cols 3480-3968
+    R_R2:   [77.52, 10.15],  // cols 3721-4208
+    R_R1:   [88.33, 10.15],  // cols 4240-4727
+};
+
+/**
+ * R1 matchup y-positions as [topY%, midY%, botY%] of PDF native height (3750 px).
+ * 16 entries — one per matchup. Both sides (left A+B, right C+D) use the same y values.
+ * Groups A and C occupy matchups 0-7 (top half); B and D occupy matchups 8-15 (bottom half).
+ *
+ * Structure: each matchup box = seed1_box + [1-2px double-line border] + seed2_box,
+ * separated from the next matchup by a ~79px spacer row.
+ * topY = top of seed1 box, midY = dividing line, botY = bottom of seed2 box.
+ */
+const R1_Y = [
+    [ 1.87,  3.89,  5.92],  // matchup 0  rows  70-222
+    [ 8.03, 10.04, 12.05],  // matchup 1  rows 301-452
+    [14.16, 16.17, 18.21],  // matchup 2  rows 531-683
+    [20.29, 22.31, 24.35],  // matchup 3  rows 761-913
+    [26.45, 28.47, 30.48],  // matchup 4  rows 992-1143
+    [32.59, 34.60, 36.64],  // matchup 5  rows 1222-1374
+    [38.72, 40.73, 42.77],  // matchup 6  rows 1452-1604
+    [44.88, 46.89, 48.91],  // matchup 7  rows 1683-1834
+    [51.01, 53.03, 55.07],  // matchup 8  rows 1913-2065
+    [57.15, 59.16, 61.20],  // matchup 9  rows 2143-2295
+    [63.31, 65.32, 67.33],  // matchup 10 rows 2374-2525
+    [69.44, 71.45, 73.49],  // matchup 11 rows 2604-2756
+    [75.57, 77.59, 79.63],  // matchup 12 rows 2834-2986
+    [81.71, 83.72, 85.76],  // matchup 13 rows 3064-3216
+    [87.87, 89.88, 91.92],  // matchup 14 rows 3295-3447
+    [94.00, 96.01, 98.05],  // matchup 15 rows 3525-3677
+];
+
+/**
+ * R2 matchup y-positions. 8 entries (4 per group-side).
+ * Indices 0-3 = Groups A/C (top half); 4-7 = Groups B/D (bottom half).
+ */
+const R2_Y = [
+    [ 5.01,  7.04,  9.07],  // rows 188-340
+    [17.31, 19.33, 21.36],  // rows 649-801
+    [29.60, 31.63, 33.65],  // rows 1110-1262
+    [41.87, 43.89, 45.92],  // rows 1570-1722
+    [54.16, 56.19, 58.21],  // rows 2031-2183
+    [66.45, 68.45, 70.48],  // rows 2492-2643
+    [78.72, 80.75, 82.77],  // rows 2952-3104
+    [91.01, 93.04, 95.07],  // rows 3413-3565
+];
+
+/**
+ * R3 matchup y-positions. 4 entries (2 per group-side).
+ * Indices 0-1 = Groups A/C; 2-3 = Groups B/D.
+ */
+const R3_Y = [
+    [11.01, 13.04, 15.07],  // rows 413-565   (Group A/C, R3 matchup 1)
+    [35.57, 37.60, 39.63],  // rows 1334-1486 (Group A/C, R3 matchup 2)
+    [60.13, 62.16, 64.19],  // rows 2255-2407 (Group B/D, R3 matchup 1)
+    [84.72, 86.75, 88.77],  // rows 3177-3329 (Group B/D, R3 matchup 2)
+];
+
+/**
+ * R4 (group final) y-positions. 2 entries per side.
+ * Index 0 = Groups A/C (top half); index 1 = Groups B/D (bottom half).
+ */
+const R4_Y = [
+    [23.31, 25.32, 27.33],  // rows 874-1025
+    [72.43, 74.45, 76.48],  // rows 2716-2868
+];
+
+/**
+ * Semi-final (JS R5) y-position — one matchup per side.
+ * Left side: A-champ vs B-champ (L_SEMI column).
+ * Right side: C-champ vs D-champ (R_SEMI column).
+ */
+const SEMI_Y = [47.87, 49.89, 51.92];  // rows 1795-1947
+
+/**
+ * Final (JS R6) y-position — CHAMP column center.
+ */
+const FINAL_Y = [47.87, 49.89, 51.92];  // rows 1795-1947 (same box area as semi)
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let allMidrashim = [];          // flat array from server
-let groups = {};                // { A: [...16], B: [...16], C: [...16], D: [...16] }
-let currentRound = 1;           // 1-6
+let allMidrashim = [];
+let groups = {};               // { A:[...16], B:[...16], C:[...16], D:[...16] }
+let currentRound = 1;
 const TOTAL_ROUNDS = 6;
 
-/**
- * winners[round][matchupIndex] = midrash_id of winner (or null)
- * matchupIndex is global across all matchups in that round.
- *
- * Round 1: indices 0-31  (groups A,B,C,D each have 8 matchups)
- * Round 2: indices 0-15
- * Round 3: indices 0-7
- * Round 4: indices 0-3
- * Round 5: indices 0-1
- * Round 6: indices 0
- */
 let winners = {
     1: new Array(32).fill(null),
     2: new Array(16).fill(null),
@@ -46,76 +159,50 @@ let winners = {
     6: new Array(1).fill(null),
 };
 
-// Active matchup being shown in the modal
-// pendingPick holds the midrash_id the user has highlighted but not yet confirmed with OK
-let activeMatchup = null; // { round, index, idA, idB, pendingPick }
+let activeMatchup = null;  // { round, index, idA, idB, pendingPick }
 
-// ─── Group/matchup index helpers ──────────────────────────────────────────────
+// ─── Seeding ──────────────────────────────────────────────────────────────────
 
 const GROUP_NAMES = ['A', 'B', 'C', 'D'];
 
 /**
- * Returns the global matchup start index for a group in a given round.
- * Rounds 1-4 have 8/4/2/1 matchups per group.
- * Rounds 5-6 are cross-group.
- */
-function groupOffset(groupIndex, round) {
-    const matchupsPerGroup = [0, 8, 4, 2, 1][round]; // round 1-4
-    return groupIndex * matchupsPerGroup;
-}
-
-/**
- * Standard 8-seed bracket matchup pairs (0-indexed seeds 0-15)
- * Returns array of [topSeedIdx, bottomSeedIdx] pairs in visual bracket order.
+ * Standard bracket seed pairing for 16-seed group, visual top-to-bottom order.
+ * [seedIndex0, seedIndex1] where index 0 = seed 1 (0-indexed).
  */
 const SEED_PAIRS_R1 = [
-    [0, 15], // 1 vs 16
-    [7, 8],  // 8 vs 9
-    [4, 11], // 5 vs 12
-    [3, 12], // 4 vs 13
-    [2, 13], // 3 vs 14
-    [5, 10], // 6 vs 11
-    [6, 9],  // 7 vs 10
-    [1, 14], // 2 vs 15
+    [0, 15],  // 1 vs 16
+    [7,  8],  // 8 vs 9
+    [4, 11],  // 5 vs 12
+    [3, 12],  // 4 vs 13
+    [2, 13],  // 3 vs 14
+    [5, 10],  // 6 vs 11
+    [6,  9],  // 7 vs 10
+    [1, 14],  // 2 vs 15
 ];
 
-/**
- * Get the two contestants for a matchup at a given round and matchup index
- * (relative to that group's start).
- */
 function getContestants(round, globalIdx) {
     if (round === 1) {
-        // Determine group
         const groupIdx = Math.floor(globalIdx / 8);
         const localIdx = globalIdx % 8;
         const group = groups[GROUP_NAMES[groupIdx]];
         if (!group) return [null, null];
-        const [seedA, seedB] = SEED_PAIRS_R1[localIdx];
-        return [group[seedA], group[seedB]];
+        const [sA, sB] = SEED_PAIRS_R1[localIdx];
+        return [group[sA], group[sB]];
     }
     if (round >= 2 && round <= 4) {
-        const matchupsPerGroup = [0, 0, 4, 2, 1][round];
-        const groupIdx = Math.floor(globalIdx / matchupsPerGroup);
-        const localIdx = globalIdx % matchupsPerGroup;
-        // Each matchup pulls from the previous round's two relevant winners
-        const prevMatchupsPerGroup = [0, 8, 4, 2, 1][round - 1];
-        const prevOffset = groupIdx * prevMatchupsPerGroup;
-        // In bracket order, local matchup i in this round comes from prev matchups 2i and 2i+1
-        const prevIdxA = prevOffset + localIdx * 2;
-        const prevIdxB = prevOffset + localIdx * 2 + 1;
+        const mPerGroup = [0, 0, 4, 2, 1][round];
+        const groupIdx  = Math.floor(globalIdx / mPerGroup);
+        const localIdx  = globalIdx % mPerGroup;
+        const prevMPG   = [0, 8, 4, 2, 1][round - 1];
+        const prevOff   = groupIdx * prevMPG;
         return [
-            midrashById(winners[round - 1][prevIdxA]),
-            midrashById(winners[round - 1][prevIdxB]),
+            midrashById(winners[round - 1][prevOff + localIdx * 2]),
+            midrashById(winners[round - 1][prevOff + localIdx * 2 + 1]),
         ];
     }
     if (round === 5) {
-        // Semi-finals: winner of group A (idx 0 in round4) vs winner of group B (idx 1)
-        //              winner of group C (idx 2) vs winner of group D (idx 3)
-        if (globalIdx === 0) {
-            return [midrashById(winners[4][0]), midrashById(winners[4][1])];
-        } else {
-            return [midrashById(winners[4][2]), midrashById(winners[4][3])];
-        }
+        if (globalIdx === 0) return [midrashById(winners[4][0]), midrashById(winners[4][1])];
+        return [midrashById(winners[4][2]), midrashById(winners[4][3])];
     }
     if (round === 6) {
         return [midrashById(winners[5][0]), midrashById(winners[5][1])];
@@ -124,359 +211,312 @@ function getContestants(round, globalIdx) {
 }
 
 function midrashById(id) {
-    if (id === null || id === undefined) return null;
-    return allMidrashim.find(m => m.midrash_id === id) || null;
+    if (id == null) return null;
+    return allMidrashim.find(m => m.midrash_id === id) ?? null;
 }
 
-// ─── DOM Helpers ──────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function el(id) { return document.getElementById(id); }
 
-function makeSeedBox(labelText, midrash, round, globalIdx, clickable) {
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Image height ─────────────────────────────────────────────────────────────
+
+/**
+ * Returns the px height the bracket image should be set to, so that the
+ * smallest R1 seed box is at least MIN_BOX_PX tall.
+ *
+ * Smallest seed box = shortest (topY → midY) or (midY → botY) across R1_Y.
+ * That fraction of the total image height must be >= MIN_BOX_PX.
+ */
+function requiredImageHeight() {
+    let minFrac = Infinity;
+    for (const [t, m, b] of R1_Y) {
+        minFrac = Math.min(minFrac, (m - t) / 100, (b - m) / 100);
+    }
+    return Math.ceil(MIN_BOX_PX / minFrac);
+}
+
+// ─── Overlay factory ──────────────────────────────────────────────────────────
+
+/**
+ * Build a positioned overlay div for one matchup.
+ * @param {object} o
+ *   left, top, width, height — all in % of stage dimensions
+ *   labelA, labelB — text for top and bottom seed rows
+ *   clickable — whether to attach click handler
+ *   decided   — whether winner already chosen
+ *   winnerId, idA, idB — for highlighting winner row
+ *   round, globalIdx, mA, mB — for click handler
+ */
+function makeOverlay(o) {
     const div = document.createElement('div');
-    div.className = 'seed-box';
+    div.className = 'bracket-overlay';
+    div.style.cssText =
+        `left:${o.left}%;top:${o.top}%;width:${o.width}%;height:${o.height}%;`;
 
-    if (!midrash) {
-        div.classList.add('tbd');
-        div.textContent = 'TBD';
-        return div;
+    const rowA = document.createElement('div');
+    rowA.className = 'overlay-seed-row overlay-seed-top';
+    rowA.textContent = o.labelA;
+
+    const rowB = document.createElement('div');
+    rowB.className = 'overlay-seed-row overlay-seed-bot';
+    rowB.textContent = o.labelB;
+
+    div.appendChild(rowA);
+    div.appendChild(rowB);
+
+    if (o.decided) {
+        div.classList.add('overlay-decided');
+        if (o.mA && o.mA.midrash_id === o.winnerId) rowA.classList.add('overlay-winner-row');
+        if (o.mB && o.mB.midrash_id === o.winnerId) rowB.classList.add('overlay-winner-row');
     }
 
-    div.textContent = labelText;
-
-    const winnerId = winners[round] ? winners[round][globalIdx] : null;
-    const isWinner = (winnerId !== null && winnerId !== undefined);
-
-    if (round < currentRound) {
-        div.classList.add('locked');
-    } else if (clickable && round === currentRound) {
-        div.classList.add('clickable');
+    if (o.clickable) {
+        div.classList.add('overlay-clickable');
+        div.setAttribute('role', 'button');
+        div.setAttribute('tabindex', '0');
+        const open = () => openMatchupModal(o.round, o.globalIdx, o.mA, o.mB);
+        div.addEventListener('click', open);
+        div.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
+    } else {
+        div.classList.add('overlay-locked');
     }
-
-    if (isWinner) div.classList.add('winner');
 
     return div;
 }
 
-// ─── Rendering ────────────────────────────────────────────────────────────────
+// ─── Main render ──────────────────────────────────────────────────────────────
 
 function renderBracket() {
-    // Re-render all four group divs
-    ['A', 'B', 'C', 'D'].forEach((g, gi) => {
-        renderGroup(g, gi);
-    });
+    const stage = el('bracket-stage');
+    if (!stage) return;
 
-    // Round 5 & 6 are shown in champion area / separate section if needed
-    renderCrossRounds();
+    // Remove old overlays
+    stage.querySelectorAll('.bracket-overlay').forEach(d => d.remove());
+
+    // Set image height so every seed box is at least MIN_BOX_PX tall
+    el('bracket-img').style.height = requiredImageHeight() + 'px';
+
+    // ── ROUND 1 ──────────────────────────────────────────────────────────────
+    // R1_Y has 16 entries (one per matchup slot).
+    // Groups A and C use indices 0-7 (top half of image).
+    // Groups B and D use indices 8-15 (bottom half of image).
+    // Groups A+B → left column (L_R1); Groups C+D → right column (R_R1).
+    for (let gi = 0; gi < 4; gi++) {
+        const col   = gi < 2 ? COL.L_R1 : COL.R_R1;
+        const gName = GROUP_NAMES[gi];
+
+        for (let li = 0; li < 8; li++) {
+            const globalIdx = gi * 8 + li;
+            // gi 0 (A): yIdx 0-7; gi 1 (B): yIdx 8-15; gi 2 (C): 0-7; gi 3 (D): 8-15
+            const yIdx = (gi % 2) * 8 + li;
+            const [ytop, , ybot] = R1_Y[yIdx];
+            const [mA, mB] = getContestants(1, globalIdx);
+            const winnerId = winners[1][globalIdx];
+
+            stage.appendChild(makeOverlay({
+                left: col[0], top: ytop, width: col[1], height: ybot - ytop,
+                labelA:    mA ? `${gName}-${mA.seed}` : 'TBD',
+                labelB:    mB ? `${gName}-${mB.seed}` : 'TBD',
+                clickable: currentRound === 1 && !!mA && !!mB,
+                decided:   winnerId != null,
+                winnerId, mA, mB, round: 1, globalIdx,
+            }));
+        }
+    }
+
+    // ── ROUND 2 ──────────────────────────────────────────────────────────────
+    // R2_Y has 8 entries.
+    // Groups A and C use indices 0-3; Groups B and D use indices 4-7.
+    // Groups A+B → L_R2; Groups C+D → R_R2.
+    for (let gi = 0; gi < 4; gi++) {
+        const col = gi < 2 ? COL.L_R2 : COL.R_R2;
+
+        for (let li = 0; li < 4; li++) {
+            const globalIdx = gi * 4 + li;
+            const yIdx = (gi % 2) * 4 + li;
+            const [ytop, , ybot] = R2_Y[yIdx];
+            const [mA, mB] = getContestants(2, globalIdx);
+            const winnerId = winners[2][globalIdx];
+
+            stage.appendChild(makeOverlay({
+                left: col[0], top: ytop, width: col[1], height: ybot - ytop,
+                labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
+                labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+                clickable: currentRound === 2 && !!mA && !!mB,
+                decided:   winnerId != null,
+                winnerId, mA, mB, round: 2, globalIdx,
+            }));
+        }
+    }
+
+    // ── ROUND 3 ──────────────────────────────────────────────────────────────
+    // R3_Y has 4 entries.
+    // Groups A and C use indices 0-1; Groups B and D use indices 2-3.
+    // Groups A+B → L_R3; Groups C+D → R_R3.
+    for (let gi = 0; gi < 4; gi++) {
+        const col = gi < 2 ? COL.L_R3 : COL.R_R3;
+
+        for (let li = 0; li < 2; li++) {
+            const globalIdx = gi * 2 + li;
+            const yIdx = (gi % 2) * 2 + li;
+            const [ytop, , ybot] = R3_Y[yIdx];
+            const [mA, mB] = getContestants(3, globalIdx);
+            const winnerId = winners[3][globalIdx];
+
+            stage.appendChild(makeOverlay({
+                left: col[0], top: ytop, width: col[1], height: ybot - ytop,
+                labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
+                labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+                clickable: currentRound === 3 && !!mA && !!mB,
+                decided:   winnerId != null,
+                winnerId, mA, mB, round: 3, globalIdx,
+            }));
+        }
+    }
+
+    // ── ROUND 4 (group finals) ────────────────────────────────────────────────
+    // R4_Y has 2 entries (one per half of image).
+    // Groups A and C use index 0; Groups B and D use index 1.
+    // Groups A+B → L_R4; Groups C+D → R_R4.
+    for (let gi = 0; gi < 4; gi++) {
+        const col  = gi < 2 ? COL.L_R4 : COL.R_R4;
+        const yIdx = gi % 2;   // 0 for A/C, 1 for B/D
+        const [ytop, , ybot] = R4_Y[yIdx];
+        const [mA, mB] = getContestants(4, gi);
+        const winnerId = winners[4][gi];
+
+        stage.appendChild(makeOverlay({
+            left: col[0], top: ytop, width: col[1], height: ybot - ytop,
+            labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
+            labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+            clickable: currentRound === 4 && !!mA && !!mB,
+            decided:   winnerId != null,
+            winnerId, mA, mB, round: 4, globalIdx: gi,
+        }));
+    }
+
+    // ── ROUND 5 (semi-finals) ─────────────────────────────────────────────────
+    // Left semi (A-champ vs B-champ) → L_SEMI; right semi (C-champ vs D-champ) → R_SEMI.
+    for (let i = 0; i < 2; i++) {
+        const col = i === 0 ? COL.L_SEMI : COL.R_SEMI;
+        const [ytop, , ybot] = SEMI_Y;
+        const [mA, mB] = getContestants(5, i);
+        const winnerId = winners[5][i];
+
+        stage.appendChild(makeOverlay({
+            left: col[0], top: ytop, width: col[1], height: ybot - ytop,
+            labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
+            labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+            clickable: currentRound === 5 && !!mA && !!mB,
+            decided:   winnerId != null,
+            winnerId, mA, mB, round: 5, globalIdx: i,
+        }));
+    }
+
+    // ── ROUND 6 (final) ──────────────────────────────────────────────────────
+    {
+        const [ytop, , ybot] = FINAL_Y;
+        const [mA, mB] = getContestants(6, 0);
+        const winnerId = winners[6][0];
+
+        stage.appendChild(makeOverlay({
+            left: COL.CHAMP[0], top: ytop, width: COL.CHAMP[1], height: ybot - ytop,
+            labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
+            labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+            clickable: currentRound === 6 && !!mA && !!mB,
+            decided:   winnerId != null,
+            winnerId, mA, mB, round: 6, globalIdx: 0,
+        }));
+    }
 
     updateControls();
-    updateChampion();
-}
-
-function renderGroup(groupName, groupIndex) {
-    const container = el(`group-${groupName.toLowerCase()}`);
-    container.innerHTML = '';
-
-    const innerFlex = document.createElement('div');
-    innerFlex.style.display = 'flex';
-    innerFlex.style.flexDirection = 'row';
-    innerFlex.style.alignItems = 'stretch';
-
-    // Build round-1 column wrapped with the group label above it
-    const r1Wrapper = document.createElement('div');
-    r1Wrapper.style.display = 'flex';
-    r1Wrapper.style.flexDirection = 'column';
-
-    const label = document.createElement('div');
-    label.className = 'group-label';
-    label.textContent = `Group ${groupName}`;
-    r1Wrapper.appendChild(label);
-
-    const r1Col = document.createElement('div');
-    r1Col.className = 'round-col';
-    r1Col.dataset.round = 1;
-    const r1Matchups = 8;
-    const r1Offset = groupOffset(groupIndex, 1);
-    for (let mi = 0; mi < r1Matchups; mi++) {
-        r1Col.appendChild(buildMatchupSlot(1, r1Offset + mi, groupName));
-    }
-    r1Wrapper.appendChild(r1Col);
-    innerFlex.appendChild(r1Wrapper);
-
-    // Rounds 2-4 as plain columns
-    for (let r = 2; r <= 4; r++) {
-        const col = document.createElement('div');
-        col.className = 'round-col';
-        col.dataset.round = r;
-
-        const matchupsInRound = [0, 0, 4, 2, 1][r];
-        const offset = groupOffset(groupIndex, r);
-
-        for (let mi = 0; mi < matchupsInRound; mi++) {
-            col.appendChild(buildMatchupSlot(r, offset + mi, groupName));
-        }
-
-        innerFlex.appendChild(col);
-    }
-
-    container.appendChild(innerFlex);
-}
-
-function buildMatchupSlot(round, globalIdx, groupName) {
-    const [mA, mB] = getContestants(round, globalIdx);
-    const slot = document.createElement('div');
-    slot.className = 'matchup-slot';
-
-    // The entire matchup-pair is the single clickable card unit
-    const pair = document.createElement('div');
-    pair.className = 'matchup-pair';
-
-    const labelA = mA ? `${groupName} - ${mA.seed}` : 'TBD';
-    const labelB = mB ? `${groupName} - ${mB.seed}` : 'TBD';
-
-    // Boxes are display-only — no individual click handlers
-    const boxA = makeSeedBox(labelA, mA, round, globalIdx, false);
-    const boxB = makeSeedBox(labelB, mB, round, globalIdx, false);
-
-    // Highlight the winner box
-    const winnerId = winners[round][globalIdx];
-    if (winnerId !== null && winnerId !== undefined) {
-        if (mA && mA.midrash_id === winnerId) boxA.classList.add('winner');
-        if (mB && mB.midrash_id === winnerId) boxB.classList.add('winner');
-    }
-
-    const canClick = (round === currentRound) && mA && mB;
-    if (canClick) {
-        // The whole pair card is the clickable unit
-        pair.classList.add('matchup-card-clickable');
-        pair.setAttribute('role', 'button');
-        pair.setAttribute('tabindex', '0');
-        pair.addEventListener('click', () => openMatchupModal(round, globalIdx, mA, mB));
-        pair.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') openMatchupModal(round, globalIdx, mA, mB);
-        });
-    } else {
-        pair.classList.add('matchup-card-locked');
-    }
-
-    // Mark already-won pairs visually
-    if (winnerId !== null && winnerId !== undefined) {
-        pair.classList.add('matchup-card-decided');
-    }
-
-    pair.appendChild(boxA);
-    pair.appendChild(boxB);
-    slot.appendChild(pair);
-    return slot;
-}
-
-function renderCrossRounds() {
-    // Rounds 5-6 are rendered in a special section between / below the groups
-    // We inject them into the bracket container as additional rows if they're active
-    let crossSection = el('cross-rounds-section');
-    if (!crossSection) {
-        crossSection = document.createElement('div');
-        crossSection.id = 'cross-rounds-section';
-        crossSection.style.cssText = 'grid-column:1/4;grid-row:3;display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px 0 10px 0;';
-        el('bracket-container').appendChild(crossSection);
-    }
-    crossSection.innerHTML = '';
-
-    if (currentRound < 5) return;
-
-    // Round 5 - Semi-finals
-    const r5Label = document.createElement('div');
-    r5Label.style.cssText = 'font-family:cursive;font-size:22px;color:#333;margin-bottom:4px;';
-    r5Label.textContent = 'Semi-Finals';
-    crossSection.appendChild(r5Label);
-
-    const r5Row = document.createElement('div');
-    r5Row.style.cssText = 'display:flex;gap:60px;justify-content:center;';
-
-    for (let i = 0; i < 2; i++) {
-        const [mA, mB] = getContestants(5, i);
-        const slot = buildCrossMatchupSlot(5, i, mA, mB, 'SF');
-        r5Row.appendChild(slot);
-    }
-    crossSection.appendChild(r5Row);
-
-    if (currentRound < 6) return;
-
-    // Round 6 - Final
-    const r6Label = document.createElement('div');
-    r6Label.style.cssText = 'font-family:cursive;font-size:22px;color:#333;margin:14px 0 4px 0;';
-    r6Label.textContent = 'Final';
-    crossSection.appendChild(r6Label);
-
-    const [fA, fB] = getContestants(6, 0);
-    const finalSlot = buildCrossMatchupSlot(6, 0, fA, fB, 'F');
-    finalSlot.style.marginTop = '0';
-    crossSection.appendChild(finalSlot);
-
-    // Submit button after final
-    if (!el('submit-area')) {
-        const submitArea = document.createElement('div');
-        submitArea.id = 'submit-area';
-        const submitBtn = document.createElement('button');
-        submitBtn.id = 'submit-bracket-btn';
-        submitBtn.className = 'ripple';
-        submitBtn.textContent = 'Submit Your Bracket';
-        submitBtn.addEventListener('click', openSubmitModal);
-        submitArea.appendChild(submitBtn);
-        crossSection.appendChild(submitArea);
-    }
-}
-
-function buildCrossMatchupSlot(round, globalIdx, mA, mB, prefix) {
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex;flex-direction:column;gap:2px;align-items:center;';
-
-    const labelA = mA ? `${prefix}${globalIdx * 2 + 1}` : 'TBD';
-    const labelB = mB ? `${prefix}${globalIdx * 2 + 2}` : 'TBD';
-
-    // Show seed info
-    const descA = mA ? `${mA.group} - ${mA.seed}` : 'TBD';
-    const descB = mB ? `${mB.group} - ${mB.seed}` : 'TBD';
-
-    const pair = document.createElement('div');
-    pair.className = 'matchup-pair';
-    pair.style.cursor = (round === currentRound && mA && mB) ? 'pointer' : 'default';
-
-    const boxA = document.createElement('div');
-    boxA.className = 'seed-box' + (round === currentRound && mA && mB ? ' clickable' : '') + (!mA ? ' tbd' : '');
-    boxA.textContent = descA;
-
-    const boxB = document.createElement('div');
-    boxB.className = 'seed-box' + (round === currentRound && mA && mB ? ' clickable' : '') + (!mB ? ' tbd' : '');
-    boxB.textContent = descB;
-
-    const winnerId = winners[round][globalIdx];
-    if (winnerId !== null && winnerId !== undefined) {
-        if (mA && mA.midrash_id === winnerId) boxA.classList.add('winner');
-        if (mB && mB.midrash_id === winnerId) boxB.classList.add('winner');
-    }
-
-    if (round === currentRound && mA && mB) {
-        const openModal = () => openMatchupModal(round, globalIdx, mA, mB);
-        boxA.addEventListener('click', openModal);
-        boxB.addEventListener('click', openModal);
-    }
-
-    pair.appendChild(boxA);
-    pair.appendChild(boxB);
-    wrapper.appendChild(pair);
-    return wrapper;
 }
 
 // ─── Controls ─────────────────────────────────────────────────────────────────
 
 function updateControls() {
     el('round-label').textContent = `Round ${currentRound} of ${TOTAL_ROUNDS}`;
-
     const backBtn = el('back-btn');
-    const advBtn = el('advance-btn');
+    const advBtn  = el('advance-btn');
 
     backBtn.style.display = currentRound > 1 ? 'inline-block' : 'none';
 
-    // Show advance button if all winners for current round are set and round < 6
-    if (currentRound < TOTAL_ROUNDS && allWinnersSet(currentRound)) {
-        advBtn.style.display = 'inline-block';
-        advBtn.textContent = currentRound === 5 ? 'Go to Final ›' : 'Advance to Next Round ›';
-    } else {
-        advBtn.style.display = 'none';
+    const done = allWinnersSet(currentRound);
+    const canAdv = currentRound < TOTAL_ROUNDS && done;
+    advBtn.style.display  = canAdv ? 'inline-block' : 'none';
+    if (canAdv) {
+        advBtn.textContent = currentRound === 5 ? 'Go to Final \u203a' : 'Advance to Next Round \u203a';
     }
 
-    // If round 6 winner is set, hide advance and show submit
-    if (currentRound === TOTAL_ROUNDS && allWinnersSet(TOTAL_ROUNDS)) {
-        advBtn.style.display = 'none';
+    // Show submit button once all 6 rounds complete
+    const submitArea = el('submit-area');
+    if (submitArea) {
+        const allComplete = currentRound === TOTAL_ROUNDS && allWinnersSet(6);
+        submitArea.style.display = allComplete ? 'block' : 'none';
     }
 }
 
 function allWinnersSet(round) {
-    return winners[round].every(w => w !== null && w !== undefined);
+    return winners[round].every(w => w != null);
 }
 
 function advanceRound() {
-    if (!allWinnersSet(currentRound)) return;
-    if (currentRound >= TOTAL_ROUNDS) return;
+    if (!allWinnersSet(currentRound) || currentRound >= TOTAL_ROUNDS) return;
     currentRound++;
     renderBracket();
 }
 
 function goBack() {
     if (currentRound <= 1) return;
-    const confirmed = confirm(
-        `Going back will discard all your selections for Round ${currentRound}. Are you sure?`
-    );
-    if (!confirmed) return;
-    // Clear winners for current round
+    if (!confirm(`Going back will clear all your picks for Round ${currentRound}. Continue?`)) return;
     winners[currentRound] = new Array(winners[currentRound].length).fill(null);
     currentRound--;
     renderBracket();
-}
-
-function updateChampion() {
-    const champName = el('champion-name');
-    const champId = winners[6][0];
-    if (champId !== null && champId !== undefined) {
-        const champ = midrashById(champId);
-        champName.textContent = champ ? `${champ.group} - ${champ.seed}` : '-';
-        champName.style.color = 'rgb(39, 174, 96)';
-    } else {
-        champName.textContent = '-';
-        champName.style.color = 'rgb(69, 69, 241)';
-    }
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 function openMatchupModal(round, globalIdx, mA, mB) {
     if (round !== currentRound) return;
+    const existing = winners[round][globalIdx] ?? null;
+    activeMatchup  = { round, index: globalIdx, idA: mA.midrash_id, idB: mB.midrash_id, pendingPick: existing };
 
-    // Seed pendingPick from any already-confirmed winner for this matchup
-    const existingWinner = (winners[round][globalIdx] !== undefined ? winners[round][globalIdx] : null);
-    activeMatchup = { round, index: globalIdx, idA: mA.midrash_id, idB: mB.midrash_id, pendingPick: existingWinner };
-
-    el('seed-a').textContent = `${mA.group} - Seed ${mA.seed}`;
-    el('desc-a').textContent = mA.long_desc || mA.short_desc || '';
+    el('seed-a').textContent   = `${mA.group} \u2014 Seed ${mA.seed}`;
+    el('desc-a').textContent   = mA.long_desc || mA.short_desc || '';
     el('source-a').textContent = mA.source ? `Source: ${mA.source}` : '';
 
-    el('seed-b').textContent = `${mB.group} - Seed ${mB.seed}`;
-    el('desc-b').textContent = mB.long_desc || mB.short_desc || '';
+    el('seed-b').textContent   = `${mB.group} \u2014 Seed ${mB.seed}`;
+    el('desc-b').textContent   = mB.long_desc || mB.short_desc || '';
     el('source-b').textContent = mB.source ? `Source: ${mB.source}` : '';
 
-    // Restore any existing highlight and set OK button state
-    highlightPick(existingWinner, mA.midrash_id, mB.midrash_id);
+    highlightPick(existing, mA.midrash_id, mB.midrash_id);
     updateOkButton();
-
     el('matchup-modal').style.display = 'flex';
 }
 
 function highlightPick(winnerId, idA, idB) {
-    const cardA = el('contestant-a');
-    const cardB = el('contestant-b');
-    const btnA = el('pick-a');
-    const btnB = el('pick-b');
-
-    // Card border highlight
+    const cardA = el('contestant-a'), cardB = el('contestant-b');
     cardA.style.borderColor = winnerId === idA ? 'rgb(39,174,96)' : 'transparent';
     cardB.style.borderColor = winnerId === idB ? 'rgb(39,174,96)' : 'transparent';
-
-    // Selected class for stronger visual feedback
     cardA.classList.toggle('selected', winnerId === idA);
     cardB.classList.toggle('selected', winnerId === idB);
-
-    // Button states
-    btnA.classList.toggle('pick-btn-selected', winnerId === idA);
-    btnB.classList.toggle('pick-btn-selected', winnerId === idB);
+    el('pick-a').classList.toggle('pick-btn-selected', winnerId === idA);
+    el('pick-b').classList.toggle('pick-btn-selected', winnerId === idB);
 }
 
 function updateOkButton() {
-    const okBtn = el('matchup-ok-btn');
-    if (!okBtn) return;
-    const hasPick = activeMatchup && activeMatchup.pendingPick !== null;
-    okBtn.disabled = !hasPick;
-    okBtn.classList.toggle('ok-btn-ready', hasPick);
+    const ok = el('matchup-ok-btn');
+    if (!ok) return;
+    const has = !!(activeMatchup && activeMatchup.pendingPick != null);
+    ok.disabled = !has;
+    ok.classList.toggle('ok-btn-ready', has);
 }
 
 function closeMatchupModal() {
@@ -484,35 +524,25 @@ function closeMatchupModal() {
     activeMatchup = null;
 }
 
-/**
- * Called when a pick button is clicked.
- * Only updates the pending in-modal selection — does NOT save to winners[] or close the modal.
- * The user must click OK to confirm.
- */
-function pickWinner(midrashId) {
+function pickWinner(id) {
     if (!activeMatchup) return;
-    activeMatchup.pendingPick = midrashId;
-    highlightPick(midrashId, activeMatchup.idA, activeMatchup.idB);
+    activeMatchup.pendingPick = id;
+    highlightPick(id, activeMatchup.idA, activeMatchup.idB);
     updateOkButton();
 }
 
-/**
- * Called when the OK button is clicked.
- * Saves the pending pick to winners[] and closes the modal.
- */
 function confirmMatchupPick() {
-    if (!activeMatchup || activeMatchup.pendingPick === null) return;
-    const { round, index, pendingPick } = activeMatchup;
-    winners[round][index] = pendingPick;
+    if (!activeMatchup || activeMatchup.pendingPick == null) return;
+    winners[activeMatchup.round][activeMatchup.index] = activeMatchup.pendingPick;
     closeMatchupModal();
     renderBracket();
 }
 
-// ─── Submit Modal ─────────────────────────────────────────────────────────────
+// ─── Submit ───────────────────────────────────────────────────────────────────
 
 function openSubmitModal() {
     el('submit-error').style.display = 'none';
-    el('submit-name').value = '';
+    el('submit-name').value  = '';
     el('submit-email').value = '';
     el('submit-modal').style.display = 'flex';
 }
@@ -522,219 +552,154 @@ function closeSubmitModal() {
 }
 
 async function submitBracket() {
-    const name = el('submit-name').value.trim();
+    const name  = el('submit-name').value.trim();
     const email = el('submit-email').value.trim();
-    const errDiv = el('submit-error');
+    const err   = el('submit-error');
 
     if (!name || !email) {
-        errDiv.textContent = 'Please enter both your name and email address.';
-        errDiv.style.display = 'block';
-        return;
+        err.textContent = 'Please enter both your name and email address.';
+        err.style.display = 'block'; return;
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        errDiv.textContent = 'Please enter a valid email address.';
-        errDiv.style.display = 'block';
-        return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        err.textContent = 'Please enter a valid email address.';
+        err.style.display = 'block'; return;
     }
-
     if (!allWinnersSet(6)) {
-        errDiv.textContent = 'Please complete all rounds before submitting.';
-        errDiv.style.display = 'block';
-        return;
+        err.textContent = 'Please complete all rounds before submitting.';
+        err.style.display = 'block'; return;
     }
 
-    const submitBtn = el('submit-confirm-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-
-    const payload = {
-        name,
-        email,
-        round1Winners: winners[1],
-        round2Winners: winners[2],
-        round3Winners: winners[3],
-        round4Winners: winners[4],
-        round5Winners: winners[5],
-        round6Winners: winners[6],
-    };
+    const btn = el('submit-confirm-btn');
+    btn.disabled = true; btn.textContent = 'Submitting\u2026';
 
     try {
         const resp = await fetch('/api/bracket/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                name, email,
+                round1Winners: winners[1], round2Winners: winners[2],
+                round3Winners: winners[3], round4Winners: winners[4],
+                round5Winners: winners[5], round6Winners: winners[6],
+            }),
         });
 
         if (resp.status === 409) {
-            errDiv.textContent = 'A bracket with this email address has already been submitted. Each person may only submit one bracket.';
-            errDiv.style.display = 'block';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Bracket';
-            return;
+            err.textContent = 'This email has already submitted a bracket. Each person may submit once.';
+            err.style.display = 'block';
+            btn.disabled = false; btn.textContent = 'Submit Bracket'; return;
         }
+        if (!resp.ok) throw new Error((await resp.text().catch(() => '')) || 'Server error');
 
-        if (!resp.ok) {
-            const msg = await resp.text().catch(() => '');
-            throw new Error(msg || 'Server error');
-        }
-
-        // Success
         closeSubmitModal();
         showSuccessBanner(name);
-
-    } catch (err) {
-        errDiv.textContent = `Submission failed: ${err.message}. Please try again.`;
-        errDiv.style.display = 'block';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Bracket';
+    } catch(e) {
+        err.textContent = `Submission failed: ${e.message}. Please try again.`;
+        err.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Submit Bracket';
     }
 }
 
 function showSuccessBanner(name) {
-    const banner = document.createElement('div');
-    banner.style.cssText = `
-        position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-        display: flex; align-items: center; justify-content: center; z-index: 200;
-    `;
-    banner.innerHTML = `
-        <div style="background:rgb(220,220,250);border-radius:14px;padding:48px 56px;max-width:500px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
-            <div style="font-family:cursive;font-size:40px;margin-bottom:16px;">🎉</div>
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200;';
+    div.innerHTML = `
+        <div style="background:rgb(220,220,250);border-radius:14px;padding:48px 56px;max-width:500px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+            <div style="font-family:cursive;font-size:40px;margin-bottom:16px;">&#x1F389;</div>
             <h2 style="font-family:cursive;font-size:32px;margin:0 0 14px 0;">Thank You, ${escapeHtml(name)}!</h2>
             <p style="font-family:'Times New Roman',serif;font-size:18px;line-height:1.6;margin:0 0 24px 0;">
-                Your bracket has been submitted successfully. We'll notify you at your email address when the results are in. May your picks be wise!
+                Your bracket has been submitted. We&rsquo;ll notify you when results are in. May your picks be wise!
             </p>
             <a href="index.html" style="font-family:'Times New Roman',serif;font-size:20px;color:rgb(69,69,241);text-decoration:underline;">Return to Home</a>
-        </div>
-    `;
-    document.body.appendChild(banner);
+        </div>`;
+    document.body.appendChild(div);
 }
 
-function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ─── Ripple Effect ────────────────────────────────────────────────────────────
+// ─── Ripple ───────────────────────────────────────────────────────────────────
 
 function attachRipple(container) {
     container.querySelectorAll('.ripple').forEach(btn => {
         btn.addEventListener('click', function(e) {
-            const rect = this.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const circle = document.createElement('span');
-            circle.classList.add('circle');
-            circle.style.top = y + 'px';
-            circle.style.left = x + 'px';
-            this.appendChild(circle);
-            setTimeout(() => circle.remove(), 500);
+            const r = this.getBoundingClientRect();
+            const c = document.createElement('span');
+            c.className = 'circle';
+            c.style.top  = (e.clientY - r.top)  + 'px';
+            c.style.left = (e.clientX - r.left) + 'px';
+            this.appendChild(c);
+            setTimeout(() => c.remove(), 500);
         });
     });
 }
 
-// ─── Data Loading ─────────────────────────────────────────────────────────────
+// ─── Data loading ─────────────────────────────────────────────────────────────
 
 async function loadMidrashim() {
-    const wrapper = el('bracket-wrapper');
-    wrapper.innerHTML = '<div id="bracket-loading">Loading bracket data...</div>';
-
     try {
         const resp = await fetch('/api/bracket/midrashim');
         if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
         const data = await resp.json();
 
-        if (!Array.isArray(data) || data.length !== 64) {
-            throw new Error(`Expected 64 midrashim, got ${data.length}.`);
-        }
+        if (!Array.isArray(data) || data.length !== 64)
+            throw new Error(`Expected 64 midrashim, got ${Array.isArray(data) ? data.length : typeof data}.`);
 
         allMidrashim = data;
-
-        // Organise into groups
-        groups = { A: [], B: [], C: [], D: [] };
-        allMidrashim.forEach(m => {
-            const g = m.group ? m.group.toUpperCase() : null;
+        groups = { A:[], B:[], C:[], D:[] };
+        data.forEach(m => {
+            const g = m.group?.toUpperCase();
             if (g && groups[g]) groups[g].push(m);
         });
-
-        // Sort each group by seed ascending (so index 0 = seed 1)
         ['A','B','C','D'].forEach(g => {
-            groups[g].sort((a, b) => a.seed - b.seed);
-            if (groups[g].length !== 16) {
+            groups[g].sort((a,b) => a.seed - b.seed);
+            if (groups[g].length !== 16)
                 throw new Error(`Group ${g} has ${groups[g].length} entries (expected 16).`);
-            }
         });
 
-        // Restore bracket container
+        // Build stage
+        const wrapper = el('bracket-wrapper');
         wrapper.innerHTML = `
-            <div id="bracket-container">
-                <div id="group-a" class="bracket-group top-left"></div>
-                <div id="group-b" class="bracket-group bottom-left"></div>
-                <div id="group-c" class="bracket-group top-right"></div>
-                <div id="group-d" class="bracket-group bottom-right"></div>
-                <div id="champion-display">
-                    <div id="champion-label">Champion</div>
-                    <div id="champion-name">-</div>
-                </div>
-            </div>
-        `;
+            <div id="bracket-stage">
+                <img id="bracket-img" src="bracketImage.png" alt="Bracket" draggable="false" />
+            </div>`;
 
+        window.addEventListener('resize', renderBracket);
         renderBracket();
 
-    } catch (err) {
-        wrapper.innerHTML = `
-            <div id="bracket-loading" style="color:#a00;">
-                Failed to load bracket data: ${escapeHtml(err.message)}<br>
-                Please refresh the page or contact an administrator.
-            </div>
-        `;
+    } catch(err) {
+        el('bracket-wrapper').innerHTML =
+            `<div id="bracket-loading" style="color:#a00;">
+                Failed to load bracket: ${escapeHtml(err.message)}<br>
+                Please refresh or contact an administrator.
+             </div>`;
     }
 }
 
-// ─── Event Listeners ──────────────────────────────────────────────────────────
+// ─── Boot ─────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Nav scroll behaviour (matches index.js)
+    // Nav scroll
     const nav = document.querySelector('nav');
     nav.classList.remove('active');
     window.addEventListener('scroll', () => {
-        if (window.scrollY > nav.offsetHeight + 5) nav.classList.add('active');
-        else nav.classList.remove('active');
+        nav.classList.toggle('active', window.scrollY > nav.offsetHeight + 5);
     });
 
-    // Round controls
+    // Controls
     el('back-btn').addEventListener('click', goBack);
     el('advance-btn').addEventListener('click', advanceRound);
 
-    // Modal close buttons
+    // Matchup modal
     el('modal-close-btn').addEventListener('click', closeMatchupModal);
-    el('submit-modal-close').addEventListener('click', closeSubmitModal);
-
-    // Close modals on overlay click
-    el('matchup-modal').addEventListener('click', e => {
-        if (e.target === el('matchup-modal')) closeMatchupModal();
-    });
-    el('submit-modal').addEventListener('click', e => {
-        if (e.target === el('submit-modal')) closeSubmitModal();
-    });
-
-    // Contestant pick buttons — update pending selection only
-    el('pick-a').addEventListener('click', () => {
-        if (activeMatchup) pickWinner(activeMatchup.idA);
-    });
-    el('pick-b').addEventListener('click', () => {
-        if (activeMatchup) pickWinner(activeMatchup.idB);
-    });
-
-    // OK button — confirm and save the pending pick
+    el('matchup-modal').addEventListener('click', e => { if (e.target === el('matchup-modal')) closeMatchupModal(); });
+    el('pick-a').addEventListener('click', () => { if (activeMatchup) pickWinner(activeMatchup.idA); });
+    el('pick-b').addEventListener('click', () => { if (activeMatchup) pickWinner(activeMatchup.idB); });
     el('matchup-ok-btn').addEventListener('click', confirmMatchupPick);
 
-    // Submit confirm
+    // Submit modal
+    el('submit-modal-close').addEventListener('click', closeSubmitModal);
+    el('submit-modal').addEventListener('click', e => { if (e.target === el('submit-modal')) closeSubmitModal(); });
     el('submit-confirm-btn').addEventListener('click', submitBracket);
+    el('submit-bracket-btn').addEventListener('click', openSubmitModal);
 
-    // Ripple on static buttons
     attachRipple(document.body);
-
-    // Load data
     loadMidrashim();
 });
