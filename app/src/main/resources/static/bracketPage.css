@@ -377,7 +377,39 @@ li#bracket {
     to { transform: translate(-50%, -50%) scale(3); opacity: 0; }
 }
 
-/* ---- Responsive ---- */
+/* Progress counter — same look as ctrl-btn but not a real button */
+.ctrl-btn-counter {
+    background-color: rgba(100, 100, 100, 0.20);
+    color: #444;
+    cursor: default;
+    pointer-events: none;
+    font-style: italic;
+}
+
+/* Inline submit button — green tint to stand out */
+.ctrl-btn-submit {
+    background-color: rgba(39, 174, 96, 0.75);
+}
+.ctrl-btn-submit:hover {
+    background-color: rgba(39, 174, 96, 0.95);
+}
+
+/* Champion display box overlay — fills entire PDF box with green */
+.bracket-overlay-champ {
+    display: flex;
+    background: rgba(39, 174, 96, 0.12);
+    border: 1.5px solid rgba(39, 174, 96, 0.6);
+    border-radius: 3px;
+}
+.bracket-overlay-champ .overlay-champ-label {
+    flex: 1;
+    justify-content: center;
+    font-size: clamp(10px, 1vw, 14px);
+    font-weight: bold;
+    color: rgb(27, 140, 70);
+    border-bottom: none;
+    background: transparent;
+}
 @media (max-width: 768px) {
     .modal-contestants { flex-direction: column; }
     .vs-divider        { justify-content: center; }

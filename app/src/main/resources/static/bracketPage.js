@@ -143,6 +143,12 @@ const SEMI_Y = [47.87, 49.89, 51.92];  // rows 1795-1947
  */
 const FINAL_Y = [47.87, 49.89, 51.92];  // rows 1795-1947 (same box area as semi)
 
+/**
+ * Champion display box — the single box directly below the final matchup.
+ * [topY%, botY%]  rows 2025-2100
+ */
+const CHAMP_BOX_Y = [54.00, 56.00];
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 let allMidrashim = [];
@@ -322,8 +328,8 @@ function renderBracket() {
 
             stage.appendChild(makeOverlay({
                 left: col[0], top: ytop, width: col[1], height: ybot - ytop,
-                labelA:    mA ? `${gName}-${mA.seed}` : 'TBD',
-                labelB:    mB ? `${gName}-${mB.seed}` : 'TBD',
+                labelA:    mA ? `${gName}-${mA.seed}` : '',
+                labelB:    mB ? `${gName}-${mB.seed}` : '',
                 clickable: currentRound === 1 && !!mA && !!mB,
                 decided:   winnerId != null,
                 winnerId, mA, mB, round: 1, globalIdx,
@@ -347,8 +353,8 @@ function renderBracket() {
 
             stage.appendChild(makeOverlay({
                 left: col[0], top: ytop, width: col[1], height: ybot - ytop,
-                labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
-                labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+                labelA:    mA ? `${mA.group}-${mA.seed}` : '',
+                labelB:    mB ? `${mB.group}-${mB.seed}` : '',
                 clickable: currentRound === 2 && !!mA && !!mB,
                 decided:   winnerId != null,
                 winnerId, mA, mB, round: 2, globalIdx,
@@ -372,8 +378,8 @@ function renderBracket() {
 
             stage.appendChild(makeOverlay({
                 left: col[0], top: ytop, width: col[1], height: ybot - ytop,
-                labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
-                labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+                labelA:    mA ? `${mA.group}-${mA.seed}` : '',
+                labelB:    mB ? `${mB.group}-${mB.seed}` : '',
                 clickable: currentRound === 3 && !!mA && !!mB,
                 decided:   winnerId != null,
                 winnerId, mA, mB, round: 3, globalIdx,
@@ -394,8 +400,8 @@ function renderBracket() {
 
         stage.appendChild(makeOverlay({
             left: col[0], top: ytop, width: col[1], height: ybot - ytop,
-            labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
-            labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+            labelA:    mA ? `${mA.group}-${mA.seed}` : '',
+            labelB:    mB ? `${mB.group}-${mB.seed}` : '',
             clickable: currentRound === 4 && !!mA && !!mB,
             decided:   winnerId != null,
             winnerId, mA, mB, round: 4, globalIdx: gi,
@@ -412,8 +418,8 @@ function renderBracket() {
 
         stage.appendChild(makeOverlay({
             left: col[0], top: ytop, width: col[1], height: ybot - ytop,
-            labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
-            labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+            labelA:    mA ? `${mA.group}-${mA.seed}` : '',
+            labelB:    mB ? `${mB.group}-${mB.seed}` : '',
             clickable: currentRound === 5 && !!mA && !!mB,
             decided:   winnerId != null,
             winnerId, mA, mB, round: 5, globalIdx: i,
@@ -428,12 +434,29 @@ function renderBracket() {
 
         stage.appendChild(makeOverlay({
             left: COL.CHAMP[0], top: ytop, width: COL.CHAMP[1], height: ybot - ytop,
-            labelA:    mA ? `${mA.group}-${mA.seed}` : 'TBD',
-            labelB:    mB ? `${mB.group}-${mB.seed}` : 'TBD',
+            labelA:    mA ? `${mA.group}-${mA.seed}` : '',
+            labelB:    mB ? `${mB.group}-${mB.seed}` : '',
             clickable: currentRound === 6 && !!mA && !!mB,
             decided:   winnerId != null,
             winnerId, mA, mB, round: 6, globalIdx: 0,
         }));
+    }
+
+    // ── CHAMPION DISPLAY BOX ─────────────────────────────────────────────────
+    // Single box below the final matchup — shows the ultimate winner.
+    {
+        const champId = winners[6][0];
+        const champ   = midrashById(champId);
+        const div = document.createElement('div');
+        div.className = 'bracket-overlay bracket-overlay-champ';
+        div.style.cssText = `left:${COL.CHAMP[0]}%;top:${CHAMP_BOX_Y[0]}%;width:${COL.CHAMP[1]}%;height:${CHAMP_BOX_Y[1] - CHAMP_BOX_Y[0]}%;`;
+        if (champ) {
+            const row = document.createElement('div');
+            row.className = 'overlay-seed-row overlay-champ-label';
+            row.textContent = `${champ.group}-${champ.seed}`;
+            div.appendChild(row);
+        }
+        stage.appendChild(div);
     }
 
     updateControls();
@@ -443,23 +466,37 @@ function renderBracket() {
 
 function updateControls() {
     el('round-label').textContent = `Round ${currentRound} of ${TOTAL_ROUNDS}`;
-    const backBtn = el('back-btn');
-    const advBtn  = el('advance-btn');
+    const backBtn     = el('back-btn');
+    const advBtn      = el('advance-btn');
+    const progressEl  = el('progress-counter');
+    const submitInline = el('submit-inline-btn');
 
     backBtn.style.display = currentRound > 1 ? 'inline-block' : 'none';
 
-    const done = allWinnersSet(currentRound);
-    const canAdv = currentRound < TOTAL_ROUNDS && done;
-    advBtn.style.display  = canAdv ? 'inline-block' : 'none';
-    if (canAdv) {
-        advBtn.textContent = currentRound === 5 ? 'Go to Final \u203a' : 'Advance to Next Round \u203a';
+    const total = winners[currentRound].length;
+    const chosen = winners[currentRound].filter(w => w != null).length;
+    const done = chosen === total;
+
+    // Round 6 complete → show Submit button in controls bar
+    if (currentRound === TOTAL_ROUNDS && done) {
+        advBtn.style.display        = 'none';
+        progressEl.style.display    = 'none';
+        submitInline.style.display  = 'inline-block';
+        return;
     }
 
-    // Show submit button once all 6 rounds complete
-    const submitArea = el('submit-area');
-    if (submitArea) {
-        const allComplete = currentRound === TOTAL_ROUNDS && allWinnersSet(6);
-        submitArea.style.display = allComplete ? 'block' : 'none';
+    submitInline.style.display = 'none';
+
+    if (done && currentRound < TOTAL_ROUNDS) {
+        // All picked for this round → show Advance, hide counter
+        advBtn.textContent       = currentRound === 5 ? 'Go to Final \u203a' : 'Advance to Next Round \u203a';
+        advBtn.style.display     = 'inline-block';
+        progressEl.style.display = 'none';
+    } else {
+        // Still picking → hide Advance, show progress counter
+        advBtn.style.display      = 'none';
+        progressEl.textContent    = `${chosen} of ${total} chosen`;
+        progressEl.style.display  = 'inline-block';
     }
 }
 
@@ -698,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
     el('submit-modal-close').addEventListener('click', closeSubmitModal);
     el('submit-modal').addEventListener('click', e => { if (e.target === el('submit-modal')) closeSubmitModal(); });
     el('submit-confirm-btn').addEventListener('click', submitBracket);
-    el('submit-bracket-btn').addEventListener('click', openSubmitModal);
+    el('submit-inline-btn').addEventListener('click', openSubmitModal);
 
     attachRipple(document.body);
     loadMidrashim();

@@ -23,17 +23,14 @@
     <div id="round-controls">
         <button id="back-btn" class="ctrl-btn" style="display:none;">&larr; Back</button>
         <span id="round-label">Round 1 of 6</span>
+        <span id="progress-counter" class="ctrl-btn ctrl-btn-counter" style="display:none;"></span>
         <button id="advance-btn" class="ctrl-btn" style="display:none;">Advance to Next Round &rarr;</button>
+        <button id="submit-inline-btn" class="ctrl-btn ctrl-btn-submit" style="display:none;">Submit Your Bracket</button>
     </div>
 
     <!-- Bracket image + overlay container — populated by JS -->
     <div id="bracket-wrapper">
         <div id="bracket-loading">Loading bracket data&hellip;</div>
-    </div>
-
-    <!-- Submit button — shown by JS after all rounds complete -->
-    <div id="submit-area" style="display:none;">
-        <button id="submit-bracket-btn" class="ripple">Submit Your Bracket</button>
     </div>
 
     <!-- Matchup Modal -->
