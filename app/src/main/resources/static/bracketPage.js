@@ -720,6 +720,13 @@ document.addEventListener('DOMContentLoaded', () => {
         nav.classList.toggle('active', window.scrollY > nav.offsetHeight + 5);
     });
 
+    // Keep round-controls pinned just below the nav at all times
+    function pinControls() {
+        el('round-controls').style.top = nav.offsetHeight + 'px';
+    }
+    pinControls();
+    window.addEventListener('resize', pinControls);
+
     // Controls
     el('back-btn').addEventListener('click', goBack);
     el('advance-btn').addEventListener('click', advanceRound);

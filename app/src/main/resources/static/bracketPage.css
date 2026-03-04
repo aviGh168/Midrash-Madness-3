@@ -14,10 +14,19 @@ li#bracket {
     align-items: center;
     justify-content: center;
     gap: 30px;
-    margin: 90px auto 18px auto;
+    padding: 12px 0;
     font-family: cursive;
     font-size: 26px;
     color: #222;
+
+    /* Sticky positioning — JS sets top to match nav height */
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin: 0;
 }
 
 #round-label {
