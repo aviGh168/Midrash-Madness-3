@@ -32,3 +32,4 @@ build
 .idea/
 
 credentials.properties
+!gradle/wrapper/gradle-wrapper.jar
