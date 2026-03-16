@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Midrash Madness - Results</title>
+    <link rel="icon" href="MMLogoNoBackground.png" />
+    <link href="styles.css" rel="stylesheet">
+    <link href="resultsPage.css" rel="stylesheet" />
+    <script src="resultsPage.js" defer></script>
+</head>
+<body>
+    <nav class="nav active">
+        <div class="container">
+            <img id="logo" src="MMLogoNoBackground.png" alt="logo" width="65px" height="50px">
+            <ul>
+                <li id="home"><a href="index.html">Home</a></li>
+                <li id="bracket"><a href="bracketPage.html">Bracket</a></li>
+                <li id="results">Results</li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1>Results</h1>
+
+    <div id="refresh-bar">
+        <button id="refresh-btn" class="ctrl-btn ripple">&#8635; Refresh Results</button>
+        <span id="last-updated"></span>
+    </div>
+
+    <!-- ── Section 1: Points Table ──────────────────────────────────────── -->
+    <h2>Midrash Point Totals</h2>
+
+    <div id="table-wrapper">
+        <div id="table-loading">Loading results&hellip;</div>
+    </div>
+
+    <!-- ── Section 2: People's Bracket ─────────────────────────────────── -->
+    <h2>The People's Bracket</h2>
+
+    <div id="bracket-wrapper">
+        <div id="bracket-loading">Loading bracket&hellip;</div>
+    </div>
+
+    <!-- Tiebreak footnote (shown when random tiebreak was used) -->
+    <div id="tiebreak-note" style="display:none;">
+        <p id="tiebreak-note-text"></p>
+    </div>
+</body>
+</html>
