@@ -1,0 +1,358 @@
+/* =============================================
+   Admin Page Styles - Midrash Madness
+   ============================================= */
+
+/* ── Password Gate ────────────────────────────────────────────────────────── */
+
+#auth-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px 60px 20px;
+}
+
+#auth-box {
+    background: rgba(255, 255, 255, 0.60);
+    border: 2px solid rgb(69, 69, 241);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(69, 69, 241, 0.15);
+    padding: 36px 40px 32px 40px;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#auth-label {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 19px;
+    color: #333;
+    margin: 0;
+    text-align: center;
+}
+
+#auth-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Reuse the same form-input look as bracketPage.css */
+.form-input {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    padding: 12px 16px;
+    border: 2px solid rgb(154, 154, 233);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.70);
+    flex: 1;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.form-input:focus {
+    outline: none;
+    border-color: rgb(69, 69, 241);
+}
+
+#auth-error {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 15px;
+    color: rgb(160, 30, 30);
+    background: rgba(220, 60, 60, 0.12);
+    border: 1.5px solid rgb(200, 60, 60);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 0;
+    text-align: center;
+}
+
+/* ── Shared button style (matches resultsPage.css / bracketPage.css) ─────── */
+
+.ctrl-btn {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    padding: 10px 24px;
+    background-color: rgba(69, 69, 241, 0.65);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+.ctrl-btn:hover  { background-color: rgba(69, 69, 241, 0.9); }
+.ctrl-btn:focus  { outline: none; }
+
+/* Ripple */
+.ctrl-btn .circle {
+    position: absolute;
+    background-color: white;
+    width: 1000px;
+    height: 1000px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    animation: rippleScale 0.5s ease-out;
+    pointer-events: none;
+}
+@keyframes rippleScale {
+    to { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+/* ── Selector bar ─────────────────────────────────────────────────────────── */
+
+#selector-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 14px 0 18px 0;
+    flex-wrap: wrap;
+}
+
+#selector-label {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    color: #222;
+}
+
+.user-dropdown {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    padding: 10px 16px;
+    border: 2px solid rgb(69, 69, 241);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.70);
+    color: #222;
+    cursor: pointer;
+    min-width: 220px;
+    transition: border-color 0.2s;
+}
+.user-dropdown:focus { outline: none; border-color: rgb(69, 69, 241); }
+
+#bracket-count-badge {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 15px;
+    color: #555;
+    font-style: italic;
+}
+
+/* ── Bracket wrapper ──────────────────────────────────────────────────────── */
+
+#bracket-wrapper {
+    width: 100%;
+    padding-bottom: 20px;
+    min-height: 60px;
+}
+
+/* Placeholder shown before a user is selected */
+#bracket-placeholder {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    text-align: center;
+    color: #555;
+    padding: 40px 0;
+}
+
+#bracket-loading {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 24px;
+    text-align: center;
+    margin: 40px auto;
+    color: #444;
+}
+
+.bracket-error {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    text-align: center;
+    margin: 40px auto;
+    color: #a00;
+}
+
+/* ── Bracket stage + overlays (identical to userBracketPage.css) ─────────── */
+
+#bracket-stage {
+    position: relative;
+    width: 100%;
+    display: block;
+}
+
+#bracket-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+}
+
+.bracket-overlay {
+    position: absolute;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.overlay-decided {
+    border: 1.5px solid rgba(39, 174, 96, 0.6);
+    border-radius: 3px;
+    background: rgba(39, 174, 96, 0.07);
+}
+
+.overlay-empty {
+    cursor: default;
+}
+
+.overlay-seed-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 5px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: clamp(9px, 0.9vw, 13px);
+    color: #333;
+    line-height: 1.1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    user-select: none;
+}
+
+.overlay-seed-top {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.overlay-winner-row {
+    color: rgb(27, 140, 70);
+    font-weight: bold;
+    background: rgba(39, 174, 96, 0.12);
+}
+
+.bracket-overlay-champ {
+    display: flex;
+    background: rgba(39, 174, 96, 0.12);
+    border: 1.5px solid rgba(39, 174, 96, 0.6);
+    border-radius: 3px;
+}
+
+.bracket-overlay-champ .overlay-champ-label {
+    flex: 1;
+    justify-content: center;
+    font-size: clamp(10px, 1vw, 14px);
+    font-weight: bold;
+    color: rgb(27, 140, 70);
+    border-bottom: none;
+    background: transparent;
+}
+
+/* ── Key section (identical to userBracketPage.css) ──────────────────────── */
+
+#key-section {
+    padding-bottom: 60px;
+}
+
+#key-wrapper {
+    width: 94%;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+#key-tables-row {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+}
+
+.key-table-shell {
+    border: 2px solid rgb(69, 69, 241);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(69, 69, 241, 0.13);
+    box-sizing: border-box;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.key-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.55);
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 17px;
+}
+
+.key-table thead {
+    background: rgb(69, 69, 241);
+    color: #fff;
+}
+
+.key-table thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-family: cursive;
+    font-size: 17px;
+    font-weight: normal;
+    letter-spacing: 0.02em;
+    border-right: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.key-table thead th:last-child {
+    border-right: none;
+}
+
+.key-table th.col-seed,
+.key-table td.col-seed {
+    width: 70px;
+    white-space: nowrap;
+}
+
+.key-table tbody tr {
+    border-bottom: 1px solid rgba(69, 69, 241, 0.2);
+    transition: background 0.15s;
+}
+
+.key-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.key-table tbody tr:hover {
+    background: rgba(69, 69, 241, 0.07);
+}
+
+.key-table tbody td {
+    padding: 9px 14px;
+    color: #222;
+    vertical-align: middle;
+    border-right: 1px solid rgba(69, 69, 241, 0.15);
+}
+
+.key-table tbody td:last-child {
+    border-right: none;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    #key-tables-row {
+        flex-direction: column;
+    }
+    .key-table-shell {
+        flex: none;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    #auth-box {
+        padding: 28px 20px 24px 20px;
+    }
+    .key-table        { font-size: 14px; }
+    .key-table thead th { font-size: 14px; padding: 9px 8px; }
+    .key-table tbody td { padding: 7px 8px; }
+    .overlay-seed-row {
+        font-size: clamp(7px, 2.2vw, 11px);
+    }
+}

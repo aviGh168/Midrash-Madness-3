@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Midrash Madness - Admin</title>
+    <link rel="icon" href="MMLogoNoBackground.png" />
+    <link href="styles.css" rel="stylesheet">
+    <link href="adminPage.css" rel="stylesheet" />
+    <script src="adminPage.js" defer></script>
+</head>
+<body>
+    <nav class="nav active">
+        <div class="container">
+            <img id="logo" src="MMLogoNoBackground.png" alt="logo" width="65px" height="50px">
+            <ul>
+                <li id="home"><a href="index.html">Home</a></li>
+                <li id="bracket"><a href="bracketPage.html">Bracket</a></li>
+                <li id="results"><a href="resultsPage.html">Results</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1>Admin Page</h1>
+
+    <!-- ── Password Gate ───────────────────────────────────────────────────── -->
+    <div id="auth-section">
+        <div id="auth-box">
+            <p id="auth-label">Enter the admin password to continue</p>
+            <div id="auth-row">
+                <input
+                        type="password"
+                        id="password-input"
+                        class="form-input"
+                        placeholder="Password"
+                        autocomplete="current-password"
+                />
+                <button id="auth-btn" class="ctrl-btn ripple">Enter</button>
+            </div>
+            <p id="auth-error" style="display:none;"></p>
+        </div>
+    </div>
+
+    <!-- ── Admin Content (hidden until authenticated) ──────────────────────── -->
+    <div id="admin-content" style="display:none;">
+
+        <!-- Dropdown -->
+        <div id="selector-bar">
+            <label for="user-select" id="selector-label">Select a submission:</label>
+            <select id="user-select" class="user-dropdown">
+                <option value="">— choose a name —</option>
+            </select>
+            <span id="bracket-count-badge"></span>
+        </div>
+
+        <!-- Bracket display -->
+        <div id="bracket-wrapper">
+            <!-- Populated by JS once a user is selected -->
+        </div>
+
+        <!-- Key (rendered once on first load, stays visible) -->
+        <div id="key-section" style="display:none;">
+            <h2>Midrash Key</h2>
+            <div id="key-wrapper"></div>
+        </div>
+
+    </div>
+</body>
+</html>
