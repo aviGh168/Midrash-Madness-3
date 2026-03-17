@@ -12,7 +12,7 @@
  * PDF native size: 4800 × 3750 px  (aspect ratio 1.28 : 1 wide)
  * All positions below are expressed as % of those native dimensions.
  *
- * Round logic (unchanged from original):
+ * Round logic:
  *   R1  32 matchups  (8 per group A-D)
  *   R2  16 matchups  (4 per group)
  *   R3   8 matchups  (2 per group)
@@ -578,6 +578,23 @@ function confirmMatchupPick() {
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
 function openSubmitModal() {
+    // Restore form HTML in case it was replaced by the success message
+    const box = el('submit-modal').querySelector('.modal-box');
+    if (!el('submit-name')) {
+        box.innerHTML = `
+            <button class="modal-close" id="submit-modal-close">&times;</button>
+            <h2 class="modal-title">Submit Your Bracket</h2>
+            <p class="modal-subtitle">Enter your details to be notified of the results!</p>
+            <div id="submit-error" class="submit-error" style="display:none;"></div>
+            <div class="submit-form">
+                <input type="text"  id="submit-name"  placeholder="Your Name"         class="form-input" />
+                <input type="email" id="submit-email" placeholder="Your Email Address" class="form-input" />
+                <button class="pick-btn ripple" id="submit-confirm-btn">Submit Bracket</button>
+            </div>`;
+        el('submit-modal-close').addEventListener('click', closeSubmitModal);
+        el('submit-confirm-btn').addEventListener('click', submitBracket);
+        attachRipple(box);
+    }
     el('submit-error').style.display = 'none';
     el('submit-name').value  = '';
     el('submit-email').value = '';
@@ -628,8 +645,7 @@ async function submitBracket() {
         }
         if (!resp.ok) throw new Error((await resp.text().catch(() => '')) || 'Server error');
 
-        closeSubmitModal();
-        showSuccessBanner(name);
+        showSuccessMessage(name);
     } catch(e) {
         err.textContent = `Submission failed: ${e.message}. Please try again.`;
         err.style.display = 'block';
@@ -637,19 +653,19 @@ async function submitBracket() {
     }
 }
 
-function showSuccessBanner(name) {
-    const div = document.createElement('div');
-    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200;';
-    div.innerHTML = `
-        <div style="background:rgb(220,220,250);border-radius:14px;padding:48px 56px;max-width:500px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3);">
-            <div style="font-family:cursive;font-size:40px;margin-bottom:16px;">&#x1F389;</div>
-            <h2 style="font-family:cursive;font-size:32px;margin:0 0 14px 0;">Thank You, ${escapeHtml(name)}!</h2>
-            <p style="font-family:'Times New Roman',serif;font-size:18px;line-height:1.6;margin:0 0 24px 0;">
-                Your bracket has been submitted. We&rsquo;ll notify you when results are in. May your picks be wise!
-            </p>
-            <a href="index.html" style="font-family:'Times New Roman',serif;font-size:20px;color:rgb(69,69,241);text-decoration:underline;">Return to Home</a>
+function showSuccessMessage(name) {
+    const box = el('submit-modal').querySelector('.modal-box');
+    box.innerHTML = `
+        <div style="text-align:center;">
+            <div style="font-size:40px;margin-bottom:16px;">&#x1F389;</div>
+            <h2 class="modal-title">Thank You, ${escapeHtml(name)}!</h2>
+            <p class="modal-subtitle">Your bracket has been submitted. We&rsquo;ll notify you when results are in. May your picks be wise!</p>
+            <div class="modal-ok-row">
+                <button class="ok-btn ok-btn-ready ripple" onclick="window.location.href='resultsPage.html'">View Current Results</button>
+            </div>
         </div>`;
-    document.body.appendChild(div);
+    attachRipple(box);
+    el('submit-modal').style.display = 'flex';
 }
 
 // ─── Ripple ───────────────────────────────────────────────────────────────────
@@ -740,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Submit modal
     el('submit-modal-close').addEventListener('click', closeSubmitModal);
-    el('submit-modal').addEventListener('click', e => { if (e.target === el('submit-modal')) closeSubmitModal(); });
+    el('submit-modal').addEventListener('click', e => { if (e.target === el('submit-modal') && el('submit-name')) closeSubmitModal(); });
     el('submit-confirm-btn').addEventListener('click', submitBracket);
     el('submit-inline-btn').addEventListener('click', openSubmitModal);
 
