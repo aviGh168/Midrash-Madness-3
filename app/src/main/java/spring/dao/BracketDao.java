@@ -169,13 +169,27 @@ public class BracketDao {
 
     /**
      * Inserts a completed_bracket row linking all round rows to the user.
+     * Returns the generated bracket_id so it can be included in the
+     * confirmation email link.
      */
-    public void insertCompletedBracket(int userId, int r1Id, int r2Id, int r3Id,
-                                       int r4Id, int r5Id, int r6Id) {
+    public int insertCompletedBracket(int userId, int r1Id, int r2Id, int r3Id,
+                                      int r4Id, int r5Id, int r6Id) {
         String sql = "INSERT INTO completed_bracket " +
                 "(user_id, round_1_id, round_2_id, round_3_id, round_4_id, round_5_id, round_6_id) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        jdbc.update(sql, userId, r1Id, r2Id, r3Id, r4Id, r5Id, r6Id);
+        KeyHolder kh = new GeneratedKeyHolder();
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setInt(1, userId);
+            ps.setInt(2, r1Id);
+            ps.setInt(3, r2Id);
+            ps.setInt(4, r3Id);
+            ps.setInt(5, r4Id);
+            ps.setInt(6, r5Id);
+            ps.setInt(7, r6Id);
+            return ps;
+        }, kh);
+        return Objects.requireNonNull(kh.getKey()).intValue();
     }
 
     // ─── Utility ──────────────────────────────────────────────────────────────

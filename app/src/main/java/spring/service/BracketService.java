@@ -31,14 +31,20 @@ public class BracketService {
     }
 
     /**
-     * Validates and persists a completed bracket submission.
+     * Validates and persists a completed bracket submission, then sends a
+     * confirmation email to the submitter.
+     * <p>
+     * The database writes are wrapped in a transaction; the email is sent
+     * <em>after</em> the transaction commits so that an email failure never
+     * rolls back a successfully saved bracket.
      *
      * @param request the fully populated submission from the frontend
+     * @return the generated bracket_id for the new completed_bracket row
      * @throws DuplicateEmailException  if the email has already submitted a bracket
      * @throws IllegalArgumentException if the round winner lists are malformed
      */
     @Transactional
-    public void submitBracket(BracketSubmitRequest request) {
+    public int submitBracket(BracketSubmitRequest request) {
         validateRequest(request);
 
         // Reject duplicate emails
@@ -57,8 +63,8 @@ public class BracketService {
         int r5Id = bracketDao.insertRound5(request.getRound5Winners());
         int r6Id = bracketDao.insertRound6(request.getRound6Winners().getFirst());
 
-        // Link everything together in completed_bracket
-        bracketDao.insertCompletedBracket(userId, r1Id, r2Id, r3Id, r4Id, r5Id, r6Id);
+        // Link everything together in completed_bracket and return the new bracket_id
+        return bracketDao.insertCompletedBracket(userId, r1Id, r2Id, r3Id, r4Id, r5Id, r6Id);
     }
 
     // ─── Validation ───────────────────────────────────────────────────────────

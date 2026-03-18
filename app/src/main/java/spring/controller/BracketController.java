@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import spring.model.BracketSubmitRequest;
 import spring.model.Midrash;
 import spring.service.BracketService;
+import spring.service.EmailService;
 
 import java.util.List;
 import java.util.Map;
@@ -22,9 +23,12 @@ import java.util.Map;
 public class BracketController {
 
     private final BracketService bracketService;
+    private final EmailService    emailService;
 
-    public BracketController(BracketService bracketService) {
+    public BracketController(BracketService bracketService,
+                             EmailService emailService) {
         this.bracketService = bracketService;
+        this.emailService   = emailService;
     }
 
     /**
@@ -65,7 +69,14 @@ public class BracketController {
     @PostMapping("/submit")
     public ResponseEntity<Map<String, String>> submitBracket(@RequestBody BracketSubmitRequest request) {
         try {
-            bracketService.submitBracket(request);
+            int bracketId = bracketService.submitBracket(request);
+
+            // Send confirmation email after the transaction has committed.
+            // Email failures are caught and logged inside EmailService and
+            // never propagate here, so the HTTP response is always 200 on success.
+            emailService.sendConfirmationEmail(
+                    request.getName(), request.getEmail(), bracketId);
+
             return ResponseEntity.ok(Map.of("message", "Bracket submitted successfully."));
 
         } catch (BracketService.DuplicateEmailException e) {

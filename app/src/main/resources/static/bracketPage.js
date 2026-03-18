@@ -659,7 +659,7 @@ function showSuccessMessage(name) {
         <div style="text-align:center;">
             <div style="font-size:40px;margin-bottom:16px;">&#x1F389;</div>
             <h2 class="modal-title">Thank You, ${escapeHtml(name)}!</h2>
-            <p class="modal-subtitle">Your bracket has been submitted. We&rsquo;ll notify you when results are in. May your picks be wise!</p>
+            <p class="modal-subtitle">Your bracket has been submitted. You should receive a confirmation email (though it may have been sent to spam). We will notify you when the final results are in, but for now, click below to see how it has been going so far.</p>
             <div class="modal-ok-row">
                 <button class="ok-btn ok-btn-ready ripple" onclick="window.location.href='resultsPage.html'">View Current Results</button>
             </div>
