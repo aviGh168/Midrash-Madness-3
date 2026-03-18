@@ -15,7 +15,7 @@ li#bracket {
     justify-content: center;
     gap: 30px;
     padding: 12px 0;
-    font-family: cursive;
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     font-size: 26px;
     color: #222;
 
@@ -30,7 +30,7 @@ li#bracket {
 }
 
 #round-label {
-    font-family: cursive;
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     font-size: 28px;
     font-weight: bold;
     color: #333;
@@ -181,8 +181,9 @@ li#bracket {
     background: rgba(0, 0, 0, 0.55);
     z-index: 100;
     display: flex;
-    align-items: center;
+    align-items: center;        /* centres the box on large screens */
     justify-content: center;
+    overflow-y: auto;           /* overlay scrolls when modal is taller than viewport */
     animation: fadeInOverlay 0.2s ease;
 }
 @keyframes fadeInOverlay {
@@ -199,6 +200,14 @@ li#bracket {
     position: relative;
     box-shadow: 0 8px 40px rgba(0,0,0,0.28);
     animation: slideUp 0.25s ease;
+    /* margin: auto centres the box inside the flex overlay on large screens.
+       When the overlay must scroll, margin: auto still gives 24px breathing
+       room above and below the box at the scroll boundaries. */
+    margin: 24px auto;
+    /* Cap height so the overlay scrolls rather than the box overflowing offscreen */
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 @keyframes slideUp {
     from { transform: translateY(30px); opacity: 0; }
@@ -220,7 +229,7 @@ li#bracket {
 .modal-close:focus { outline: none; }
 
 .modal-title {
-    font-family: cursive;
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     font-size: 32px;
     text-align: center;
     margin: 0 0 6px 0;
@@ -239,6 +248,8 @@ li#bracket {
     display: flex;
     align-items: stretch;
     gap: 18px;
+    /* On very short screens the cards can scroll within the modal box */
+    overflow-y: auto;
 }
 
 .contestant-card {
@@ -257,7 +268,7 @@ li#bracket {
 .contestant-card.selected { border-color: rgb(39, 174, 96) !important; background-color: rgba(39, 174, 96, 0.1); }
 
 .contestant-seed {
-    font-family: cursive;
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     font-size: 20px;
     color: rgb(69, 69, 241);
     font-weight: bold;
@@ -281,7 +292,7 @@ li#bracket {
 }
 
 .vs-divider {
-    font-family: cursive;
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     font-size: 28px;
     color: #888;
     display: flex;
