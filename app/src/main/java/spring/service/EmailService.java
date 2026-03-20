@@ -25,7 +25,7 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private static final String APP_URL        = "https://midrash-madness.onrender.com";
+    private static final String APP_URL        = "https://midrashmadness.com";
     private static final String RESULTS_URL    = APP_URL + "/resultsPage.html";
     private static final String BRACKET_URL    = APP_URL + "/userBracketPage.html?bracketId=";
 
@@ -66,6 +66,7 @@ public class EmailService {
                     .fromEmailAddress(fromEmail)
                     .destination(Destination.builder()
                             .toAddresses(toEmail)
+                            .bccAddresses(fromEmail)
                             .build())
                     .content(EmailContent.builder()
                             .simple(Message.builder()
@@ -162,14 +163,6 @@ public class EmailService {
                 "<p style=\"font-size:17px;color:#333;line-height:1.7;margin:0;\">" +
                 "Thank you,<br>" +
                 "<strong>The Midrash Madness Team</strong>" +
-                "</p>" +
-                "</td></tr>" +
-
-                // Footer
-                "<tr><td style=\"background-color:rgb(154,154,233);padding:18px 40px;text-align:center;\">" +
-                "<p style=\"margin:0;font-size:13px;color:#444;\">" +
-                "You received this email because you submitted a bracket at " +
-                "<a href=\"" + APP_URL + "\" style=\"color:#333;\">" + APP_URL + "</a>." +
                 "</p>" +
                 "</td></tr>" +
 
