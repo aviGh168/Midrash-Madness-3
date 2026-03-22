@@ -1,7 +1,7 @@
 INSERT INTO midrash_list (`group`, seed, short_desc, long_desc, source) VALUES
 -- Group A
 ('A', 1, 'The Mann\'s taste', 'The Mann tasted like whatever you wanted it to taste like', 'Yoma 75a'),
-('A', 2, 'Serach played a harp', 'Serach bas Asher played a harp to tell Yaakov that Yosef was still alive', 'Targum Yonason Beraishis 46/17; Sefer HaYashar'),
+('A', 2, 'Yaakov, Serach, and the harp', 'Serach bas Asher was the one to tell Yaakov that Yosef was still alive and played a harp to do so', 'Targum Yonason Beraishis 46/17; Sefer HaYashar'),
 ('A', 3, 'How Makkas Tzefardeia began', 'Makkas Tzefardeia started with one giant frog. When the Mitzrim would hit the frog, it spit out many other, smaller frogs', 'Tanchuma Va\'eira 14; Tosafos al HaTorah'),
 ('A', 4, 'Makkas Dam same cup phenomenon', 'During Makkas Dam, if a Jew and Mitzri would drink from the same cup, the Jew would drink water while the Mitzri would get blood', 'Shemos Rabba 9/10'),
 ('A', 5, 'Showing the Torah to the nations', 'Before Mattan Torah, a Malach showed the Torah to the nations asking them if they wanted to accept it. They refused due to certain Mitzvos', 'Sifri V\'zos Haberacha'),
