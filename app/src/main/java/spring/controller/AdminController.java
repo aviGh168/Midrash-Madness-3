@@ -6,7 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import spring.model.AdminBracketSummary;
+import spring.model.LeaderboardEntry;
 import spring.model.UserBracketResponse;
+import spring.service.LeaderboardService;
 import spring.service.UserBracketService;
 
 import javax.sql.DataSource;
@@ -27,6 +29,8 @@ import java.util.Map;
  *                                       sorted alphabetically by name</li>
  *   <li>GET  /api/admin/brackets/{id} — returns the full bracket for one bracket_id,
  *                                       gated by the admin password</li>
+ *   <li>GET  /api/admin/leaderboard   — returns every submission ranked by closeness
+ *                                       to the computed People's Bracket</li>
  * </ul>
  */
 @RestController
@@ -38,13 +42,16 @@ public class AdminController {
     private final String             adminPassword;
     private final JdbcTemplate       jdbc;
     private final UserBracketService userBracketService;
+    private final LeaderboardService leaderboardService;
 
     public AdminController(@Qualifier("adminPassword") String adminPassword,
                            DataSource dataSource,
-                           UserBracketService userBracketService) {
+                           UserBracketService userBracketService,
+                           LeaderboardService leaderboardService) {
         this.adminPassword      = adminPassword;
         this.jdbc               = new JdbcTemplate(dataSource);
         this.userBracketService = userBracketService;
+        this.leaderboardService = leaderboardService;
     }
 
     // ─── Auth ─────────────────────────────────────────────────────────────────
@@ -110,6 +117,44 @@ public class AdminController {
             );
 
             return ResponseEntity.ok(summaries);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An unexpected error occurred."));
+        }
+    }
+
+    // ─── Leaderboard ────────────────────────────────────────────────────────────
+
+    /**
+     * Returns every submission ranked by how closely it matches the
+     * computed People's Bracket.
+     * <p>
+     * Scoring: a submitter earns points equal to the round number for every
+     * round-1..6 slot where their pick matches the People's Bracket's pick
+     * in that same slot (1 point for round 1, 2 for round 2, etc.).
+     * Ties share a rank (standard competition ranking) and are broken
+     * alphabetically by name for display order.
+     * <p>
+     * Requires the {@code X-Admin-Password} header to match the configured password.
+     * <p>
+     * Returns:
+     *   200 OK             with JSON array of LeaderboardEntry, sorted by rank
+     *   401 Unauthorized   if the password header is absent or incorrect
+     *   500 Internal Error on unexpected server failure
+     */
+    @GetMapping("/leaderboard")
+    public ResponseEntity<?> getLeaderboard(
+            @RequestHeader(value = PASSWORD_HEADER, required = false) String supplied) {
+
+        if (supplied == null || !supplied.equals(adminPassword)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized."));
+        }
+
+        try {
+            List<LeaderboardEntry> leaderboard = leaderboardService.getLeaderboard();
+            return ResponseEntity.ok(leaderboard);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred."));

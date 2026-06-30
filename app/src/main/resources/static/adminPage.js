@@ -405,6 +405,80 @@ function renderKey() {
     el('key-section').style.display = 'block';
 }
 
+// ─── Leaderboard (closest to the People's Bracket) ─────────────────────────
+
+/**
+ * Renders the leaderboard table from an array of { rank, name, points }.
+ * Mirrors the rank/medal/pts-badge styling used on resultsPage.js's main table.
+ */
+function renderLeaderboard(entries) {
+    const wrapper = el('leaderboard-wrapper');
+
+    if (!Array.isArray(entries) || entries.length === 0) {
+        wrapper.innerHTML = '<div class="leaderboard-error">No submissions yet.</div>';
+        return;
+    }
+
+    let rows = '';
+    for (const entry of entries) {
+        const r = entry.rank;
+
+        const rowClass = (r === 1) ? ' class="rank-1"'
+            : (r === 2) ? ' class="rank-2"'
+                : (r === 3) ? ' class="rank-3"'
+                    : '';
+        const medal = (r === 1) ? '<span class="rank-medal">&#x1F947;</span>'
+            : (r === 2) ? '<span class="rank-medal">&#x1F948;</span>'
+                : (r === 3) ? '<span class="rank-medal">&#x1F949;</span>'
+                    : '';
+
+        rows += '<tr' + rowClass + '>'
+            + '<td class="col-rank">' + r + medal + '</td>'
+            + '<td class="col-name">' + escapeHtml(entry.name) + '</td>'
+            + '<td class="col-pts"><span class="pts-badge">' + entry.points + '</span></td>'
+            + '</tr>';
+    }
+
+    wrapper.innerHTML =
+        '<div class="leaderboard-table-shell">' +
+        '<table class="leaderboard-table">' +
+        '<thead><tr>' +
+        '<th class="col-rank">Rank</th>' +
+        '<th class="col-name">Name</th>' +
+        '<th class="col-pts">Pts</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+        '</div>';
+}
+
+/**
+ * Fetches the leaderboard from GET /api/admin/leaderboard and renders it.
+ * Called once during initAdminContent, right after login.
+ */
+async function loadLeaderboard() {
+    const wrapper = el('leaderboard-wrapper');
+    wrapper.innerHTML = '<div id="leaderboard-loading">Loading leaderboard&hellip;</div>';
+
+    try {
+        const resp = await fetch('/api/admin/leaderboard', { headers: adminHeaders() });
+
+        if (resp.status === 401) {
+            alert('Session expired. Please refresh and log in again.');
+            window.location.reload();
+            return;
+        }
+        if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+
+        const entries = await resp.json();
+        renderLeaderboard(entries);
+
+    } catch (err) {
+        wrapper.innerHTML =
+            `<div class="leaderboard-error">Failed to load leaderboard: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
 // ─── Bracket selection ────────────────────────────────────────────────────────
 
 /**
@@ -555,6 +629,11 @@ async function initAdminContent() {
         // Reveal admin content, hide auth gate
         el('auth-section').style.display  = 'none';
         el('admin-content').style.display = 'block';
+
+        // Load the leaderboard (independent of the dropdown/bracket flow above;
+        // failures here are shown inline in the leaderboard section and don't
+        // block the rest of the admin page from working).
+        loadLeaderboard();
 
     } catch (err) {
         // Something went wrong after auth — show error on the auth screen

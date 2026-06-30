@@ -5,11 +5,15 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import spring.model.CompletedBracketWinners;
 import spring.model.Midrash;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -74,6 +78,91 @@ public class BracketDao {
             return ps;
         }, keyHolder);
         return Objects.requireNonNull(keyHolder.getKey()).intValue();
+    }
+
+    // ─── Bulk bracket fetch (for admin leaderboard scoring) ───────────────────
+
+    /**
+     * Returns every completed bracket's full set of round winners in a single
+     * query, joined with the submitter's name.
+     * <p>
+     * Used by the admin leaderboard endpoint to score every submission against
+     * the computed People's Bracket without issuing a separate query per user
+     * (as {@code getBracketById} would require if called in a loop).
+     * <p>
+     * Each round table is joined once via its foreign key on completed_bracket;
+     * all of that table's winner columns are selected in the same row, so the
+     * whole bracket for one user comes back as a single result row.
+     */
+    public List<CompletedBracketWinners> getAllCompletedBracketsWithWinners() {
+        String sql =
+                "SELECT cb.bracket_id, u.name, " +
+                        buildWinnerColumnList("r1", 32) + ", " +
+                        buildWinnerColumnList("r2", 16) + ", " +
+                        buildWinnerColumnList("r3", 8) + ", " +
+                        buildWinnerColumnList("r4", 4) + ", " +
+                        buildWinnerColumnList("r5", 2) + ", " +
+                        buildWinnerColumnList("r6", 1) +
+                        " FROM completed_bracket cb " +
+                        "JOIN midrash_users u ON u.user_id = cb.user_id " +
+                        "JOIN round_1 r1 ON r1.r1_id = cb.round_1_id " +
+                        "JOIN round_2 r2 ON r2.r2_id = cb.round_2_id " +
+                        "JOIN round_3 r3 ON r3.r3_id = cb.round_3_id " +
+                        "JOIN round_4 r4 ON r4.r4_id = cb.round_4_id " +
+                        "JOIN round_5 r5 ON r5.r5_id = cb.round_5_id " +
+                        "JOIN round_6 r6 ON r6.r6_id = cb.round_6_id " +
+                        "ORDER BY u.name ASC";
+
+        return jdbc.query(sql, this::mapCompletedBracketRow);
+    }
+
+    /**
+     * Builds a comma-separated SELECT fragment aliasing a round table's
+     * winner columns as {@code prefix_1, prefix_2, ...} so they can be read
+     * back unambiguously regardless of round (every round table names its
+     * own columns winner1, winner2, ... which would otherwise collide once
+     * all six tables are joined into the same row).
+     */
+    private String buildWinnerColumnList(String alias, int numWinners) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= numWinners; i++) {
+            if (i > 1) sb.append(", ");
+            sb.append(alias).append(".winner").append(i)
+                    .append(" AS ").append(alias).append('_').append(i);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Maps one joined row (one user's full bracket) into a CompletedBracketWinners.
+     * Reads each round's winner columns back out using the same r{n}_{i} aliases
+     * produced by buildWinnerColumnList.
+     */
+    private CompletedBracketWinners mapCompletedBracketRow(ResultSet rs, int rowNum) throws SQLException {
+        return new CompletedBracketWinners(
+                rs.getInt("bracket_id"),
+                rs.getString("name"),
+                readWinnerColumns(rs, "r1", 32),
+                readWinnerColumns(rs, "r2", 16),
+                readWinnerColumns(rs, "r3", 8),
+                readWinnerColumns(rs, "r4", 4),
+                readWinnerColumns(rs, "r5", 2),
+                readWinnerColumns(rs, "r6", 1)
+        );
+    }
+
+    /**
+     * Reads back the {@code prefix_1 .. prefix_n} columns from the current
+     * ResultSet row into a List<Integer>, preserving column order.
+     * Uses getObject so a NULL winner (unfilled matchup) maps to a null
+     * Integer rather than silently becoming 0.
+     */
+    private List<Integer> readWinnerColumns(ResultSet rs, String prefix, int numWinners) throws SQLException {
+        List<Integer> winners = new ArrayList<>(numWinners);
+        for (int i = 1; i <= numWinners; i++) {
+            winners.add((Integer) rs.getObject(prefix + "_" + i));
+        }
+        return winners;
     }
 
     // ─── Round insertion helpers ──────────────────────────────────────────────

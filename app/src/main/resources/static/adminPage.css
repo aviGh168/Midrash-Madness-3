@@ -50,10 +50,7 @@
     box-sizing: border-box;
     transition: border-color 0.2s;
 }
-.form-input:focus {
-    outline: none;
-    border-color: rgb(69, 69, 241);
-}
+/* .form-input:focus moved to styles.css */
 
 #auth-error {
     font-family: 'Times New Roman', Times, serif;
@@ -83,22 +80,114 @@
     transition: background-color 0.2s;
     white-space: nowrap;
 }
-.ctrl-btn:hover  { background-color: rgba(69, 69, 241, 0.9); }
-.ctrl-btn:focus  { outline: none; }
+/* .ctrl-btn:hover/:focus and ripple (.ctrl-btn .circle, @keyframes rippleScale)
+   moved to styles.css */
 
-/* Ripple */
-.ctrl-btn .circle {
-    position: absolute;
-    background-color: white;
-    width: 1000px;
-    height: 1000px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    animation: rippleScale 0.5s ease-out;
-    pointer-events: none;
+/* ── Leaderboard (closest to the People's Bracket) ───────────────────────── */
+
+#leaderboard-section {
+    padding-bottom: 10px;
 }
-@keyframes rippleScale {
-    to { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+
+#leaderboard-wrapper {
+    width: 94%;
+    max-width: 900px;
+    margin: 0 auto 30px auto;
+}
+
+#leaderboard-loading {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 24px;
+    text-align: center;
+    margin: 40px auto;
+    color: #444;
+}
+
+.leaderboard-error {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    text-align: center;
+    margin: 40px auto;
+    color: #a00;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.55);
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 17px;
+}
+
+.leaderboard-table thead {
+    background: rgb(69, 69, 241);
+    color: #fff;
+}
+
+.leaderboard-table thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+    font-size: 17px;
+    font-weight: normal;
+    letter-spacing: 0.02em;
+    border-right: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.leaderboard-table thead th:last-child {
+    border-right: none;
+}
+
+.leaderboard-table th.col-rank,
+.leaderboard-table td.col-rank {
+    text-align: center;
+    width: 70px;
+}
+
+.leaderboard-table th.col-pts,
+.leaderboard-table td.col-pts {
+    text-align: center;
+    width: 80px;
+}
+
+.leaderboard-table tbody tr {
+    border-bottom: 1px solid rgba(69, 69, 241, 0.2);
+    transition: background 0.15s;
+}
+
+.leaderboard-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.leaderboard-table tbody tr:hover {
+    background: rgba(69, 69, 241, 0.07);
+}
+
+.leaderboard-table tbody td {
+    padding: 9px 14px;
+    color: #222;
+    vertical-align: middle;
+    border-right: 1px solid rgba(69, 69, 241, 0.15);
+}
+
+.leaderboard-table tbody td:last-child {
+    border-right: none;
+}
+
+/* Top 3 rank highlights (same palette as resultsPage.css) */
+.leaderboard-table tbody tr.rank-1 td { background: rgba(255, 215, 0, 0.18); }
+.leaderboard-table tbody tr.rank-2 td { background: rgba(192, 192, 192, 0.18); }
+.leaderboard-table tbody tr.rank-3 td { background: rgba(205, 127, 50, 0.14); }
+
+/* .rank-medal, .pts-badge moved to styles.css */
+
+/* Reuse the same shell look as .key-table-shell for the outer border/shadow */
+.leaderboard-table-shell {
+    border: 2px solid rgb(69, 69, 241);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(69, 69, 241, 0.13);
+    box-sizing: border-box;
 }
 
 /* ── Selector bar ─────────────────────────────────────────────────────────── */
@@ -164,195 +253,18 @@
     color: #444;
 }
 
-.bracket-error {
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 20px;
-    text-align: center;
-    margin: 40px auto;
-    color: #a00;
-}
+/* .bracket-error moved to styles.css */
 
-/* ── Bracket stage + overlays (identical to userBracketPage.css) ─────────── */
+/* ── Bracket stage + overlays (shared — moved to styles.css) ─────────────── */
 
-#bracket-stage {
-    position: relative;
-    width: 100%;
-    display: block;
-}
-
-#bracket-img {
-    width: 100%;
-    height: auto;
-    display: block;
-    user-select: none;
-    pointer-events: none;
-}
-
-.bracket-overlay {
-    position: absolute;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-}
-
-.overlay-decided {
-    border: 1.5px solid rgba(39, 174, 96, 0.6);
-    border-radius: 3px;
-    background: rgba(39, 174, 96, 0.07);
-}
-
-.overlay-empty {
-    cursor: default;
-}
-
-.overlay-seed-row {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0 5px;
-    font-family: 'Times New Roman', Times, serif;
-    font-size: clamp(9px, 0.9vw, 13px);
-    color: #333;
-    line-height: 1.1;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    user-select: none;
-}
-
-.overlay-seed-top {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.overlay-winner-row {
-    color: rgb(27, 140, 70);
-    font-weight: bold;
-    background: rgba(39, 174, 96, 0.12);
-}
-
-.bracket-overlay-champ {
-    display: flex;
-    background: rgba(39, 174, 96, 0.12);
-    border: 1.5px solid rgba(39, 174, 96, 0.6);
-    border-radius: 3px;
-}
-
-.bracket-overlay-champ .overlay-champ-label {
-    flex: 1;
-    justify-content: center;
-    font-size: clamp(10px, 1vw, 14px);
-    font-weight: bold;
-    color: rgb(27, 140, 70);
-    border-bottom: none;
-    background: transparent;
-}
-
-/* ── Key section (identical to userBracketPage.css) ──────────────────────── */
-
-#key-section {
-    padding-bottom: 60px;
-}
-
-#key-wrapper {
-    width: 94%;
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-#key-tables-row {
-    display: flex;
-    gap: 18px;
-    align-items: flex-start;
-}
-
-.key-table-shell {
-    border: 2px solid rgb(69, 69, 241);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 18px rgba(69, 69, 241, 0.13);
-    box-sizing: border-box;
-    flex: 1 1 0;
-    min-width: 0;
-}
-
-.key-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: rgba(255, 255, 255, 0.55);
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 17px;
-}
-
-.key-table thead {
-    background: rgb(69, 69, 241);
-    color: #fff;
-}
-
-.key-table thead th {
-    padding: 12px 14px;
-    text-align: left;
-    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
-    font-size: 17px;
-    font-weight: normal;
-    letter-spacing: 0.02em;
-    border-right: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.key-table thead th:last-child {
-    border-right: none;
-}
-
-.key-table th.col-seed,
-.key-table td.col-seed {
-    width: 70px;
-    white-space: nowrap;
-}
-
-.key-table tbody tr {
-    border-bottom: 1px solid rgba(69, 69, 241, 0.2);
-    transition: background 0.15s;
-}
-
-.key-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.key-table tbody tr:hover {
-    background: rgba(69, 69, 241, 0.07);
-}
-
-.key-table tbody td {
-    padding: 9px 14px;
-    color: #222;
-    vertical-align: middle;
-    border-right: 1px solid rgba(69, 69, 241, 0.15);
-}
-
-.key-table tbody td:last-child {
-    border-right: none;
-}
-
-/* ── Responsive ───────────────────────────────────────────────────────────── */
-
-@media (max-width: 900px) {
-    #key-tables-row {
-        flex-direction: column;
-    }
-    .key-table-shell {
-        flex: none;
-        width: 100%;
-    }
-}
+/* ── Key section (shared — moved to styles.css) ───────────────────────────── */
 
 @media (max-width: 768px) {
     #auth-box {
         padding: 28px 20px 24px 20px;
     }
-    .key-table        { font-size: 14px; }
-    .key-table thead th { font-size: 14px; padding: 9px 8px; }
-    .key-table tbody td { padding: 7px 8px; }
-    .overlay-seed-row {
-        font-size: clamp(7px, 2.2vw, 11px);
-    }
+    /* .key-table font-size rules and .overlay-seed-row override moved to styles.css */
+    .leaderboard-table        { font-size: 14px; }
+    .leaderboard-table thead th { font-size: 14px; padding: 9px 8px; }
+    .leaderboard-table tbody td { padding: 7px 8px; }
 }
