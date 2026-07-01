@@ -38,7 +38,6 @@
     align-items: center;
 }
 
-/* Reuse the same form-input look as bracketPage.css */
 .form-input {
     font-family: 'Times New Roman', Times, serif;
     font-size: 20px;
@@ -50,7 +49,6 @@
     box-sizing: border-box;
     transition: border-color 0.2s;
 }
-/* .form-input:focus moved to styles.css */
 
 #auth-error {
     font-family: 'Times New Roman', Times, serif;
@@ -64,24 +62,9 @@
     text-align: center;
 }
 
-/* ── Shared button style (matches resultsPage.css / bracketPage.css) ─────── */
-
 .ctrl-btn {
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 20px;
-    padding: 10px 24px;
-    background-color: rgba(69, 69, 241, 0.65);
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-    transition: background-color 0.2s;
     white-space: nowrap;
 }
-/* .ctrl-btn:hover/:focus and ripple (.ctrl-btn .circle, @keyframes rippleScale)
-   moved to styles.css */
 
 /* ── Leaderboard (closest to the People's Bracket) ───────────────────────── */
 
@@ -174,14 +157,11 @@
     border-right: none;
 }
 
-/* Top 3 rank highlights (same palette as resultsPage.css) */
 .leaderboard-table tbody tr.rank-1 td { background: rgba(255, 215, 0, 0.18); }
 .leaderboard-table tbody tr.rank-2 td { background: rgba(192, 192, 192, 0.18); }
 .leaderboard-table tbody tr.rank-3 td { background: rgba(205, 127, 50, 0.14); }
 
-/* .rank-medal, .pts-badge moved to styles.css */
 
-/* Reuse the same shell look as .key-table-shell for the outer border/shadow */
 .leaderboard-table-shell {
     border: 2px solid rgb(69, 69, 241);
     border-radius: 10px;
@@ -253,17 +233,10 @@
     color: #444;
 }
 
-/* .bracket-error moved to styles.css */
-
-/* ── Bracket stage + overlays (shared — moved to styles.css) ─────────────── */
-
-/* ── Key section (shared — moved to styles.css) ───────────────────────────── */
-
 @media (max-width: 768px) {
     #auth-box {
         padding: 28px 20px 24px 20px;
     }
-    /* .key-table font-size rules and .overlay-seed-row override moved to styles.css */
     .leaderboard-table        { font-size: 14px; }
     .leaderboard-table thead th { font-size: 14px; padding: 9px 8px; }
     .leaderboard-table tbody td { padding: 7px 8px; }

@@ -59,7 +59,7 @@ h1 {
     font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     text-align: center;
     font-size: 72px;
-    margin: 75px 0px 10px 0px;
+    margin: 75px 0 10px 0;
 }
 
 p.paragraph{
@@ -76,7 +76,7 @@ h2 {
     font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     text-align: center;
     font-size: 40px;
-    margin: 20px 0px 10px 0px;
+    margin: 20px 0 10px 0;
 }
 
 button#play{
@@ -135,13 +135,10 @@ img#diagram{
 }
 
 /* =============================================
-   Shared rules consolidated from page-specific
-   stylesheets (bracketPage / adminPage /
-   resultsPage / userBracketPage) — identical
-   blocks appearing in 2+ files live here.
+   Shared Component Styles
    ============================================= */
 
-/* ---- Shared control button ---- */
+/* ---- Control button ---- */
 .ctrl-btn {
     font-family: 'Times New Roman', Times, serif;
     font-size: 20px;
@@ -155,6 +152,7 @@ img#diagram{
     overflow: hidden;
     transition: background-color 0.2s;
 }
+
 .ctrl-btn:hover { background-color: rgba(69, 69, 241, 0.9); }
 .ctrl-btn:focus { outline: none; }
 
