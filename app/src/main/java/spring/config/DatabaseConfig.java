@@ -38,6 +38,7 @@ public class DatabaseConfig {
     @Bean
     public DataSource dataSource() throws IOException {
         String endpoint, database, username, password;
+        boolean usingLocalCredentialsFile;
 
         File credentialsFile = new File(CREDENTIALS_FILE);
         if (credentialsFile.exists()) {
@@ -48,11 +49,13 @@ public class DatabaseConfig {
             database = credentials.getProperty("database");
             username = credentials.getProperty("user");
             password = credentials.getProperty("password");
+            usingLocalCredentialsFile = true;
         } else {
             endpoint = System.getenv("DB_CONNECTION");
             database = System.getenv("DB_DATABASE");
             username = System.getenv("DB_USER");
             password = System.getenv("DB_PASSWORD");
+            usingLocalCredentialsFile = false;
         }
 
         if (endpoint == null || database == null || username == null || password == null) {
@@ -62,8 +65,12 @@ public class DatabaseConfig {
             );
         }
 
+        // Local MySQL (via credentials.properties) doesn't have a real SSL certificate configured,
+        // so we connect without SSL. Remote/deployed connections (via env vars) keep using SSL.
+        String sslParams = usingLocalCredentialsFile ? "useSSL=false" : "useSSL=true";
+
         String connectionUrl = "jdbc:mysql://" + endpoint + "/" + database
-                + "?useSSL=true"
+                + "?" + sslParams
                 + "&serverTimezone=UTC";
 
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
